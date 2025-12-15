@@ -13,9 +13,8 @@ export const getSprints = asyncHandler(async (req: Request, res: Response) => {
      throw new Error('Project ID is required');
   }
 
-  // FIX: 'as any' ব্যবহার করা হয়েছে টাইপ কনফ্লিক্ট এড়াতে
   const sprints = await Sprint.find({ project: projectId } as any)
-    .sort({ startDate: 1 });
+    .sort({ sprintNumber: 1 }); // Sorted by Sprint Number
 
   res.json(sprints);
 });
@@ -25,16 +24,14 @@ export const getSprints = asyncHandler(async (req: Request, res: Response) => {
 export const createSprint = asyncHandler(async (req: Request, res: Response) => {
   const { title, goal, startDate, endDate, project } = req.body;
 
-  // FIX: এখানেও 'as any' দেওয়া হলো সেইফটির জন্য
-  const sprintExists = await Sprint.findOne({ title, project } as any);
-  if (sprintExists) {
-    res.status(400);
-    throw new Error('Sprint already exists in this project');
-  }
+  // FIX: Auto-increment Sprint Number logic
+  const lastSprint = await Sprint.findOne({ project } as any).sort({ sprintNumber: -1 });
+  const sprintNumber = lastSprint ? lastSprint.sprintNumber + 1 : 1;
 
   const sprint = await Sprint.create({
     title,
     goal,
+    sprintNumber,
     startDate,
     endDate,
     project,
@@ -55,6 +52,7 @@ export const updateSprint = asyncHandler(async (req: Request, res: Response) => 
     sprint.startDate = req.body.startDate || sprint.startDate;
     sprint.endDate = req.body.endDate || sprint.endDate;
     sprint.status = req.body.status || sprint.status;
+    // Note: sprintNumber is usually not editable to maintain order integrity
 
     const updatedSprint = await sprint.save();
     res.json(updatedSprint);
@@ -70,7 +68,7 @@ export const deleteSprint = asyncHandler(async (req: Request, res: Response) => 
   const sprint = await Sprint.findById(req.params.id);
 
   if (sprint) {
-    // FIX: টাস্ক আপডেটের সময়ও 'as any' ব্যবহার করা হলো
+    // Tasks moved to backlog (sprint: null)
     await Task.updateMany(
         { sprint: sprint._id } as any,
         { $set: { sprint: null } }

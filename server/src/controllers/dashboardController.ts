@@ -8,17 +8,18 @@ interface AuthRequest extends Request {
   user?: any;
 }
 
-// @desc    Get dashboard stats (Optimized with .lean() and Promise.all)
+// @desc    Get dashboard stats (Optimized)
 // @route   GET /api/dashboard/stats
 export const getDashboardStats = asyncHandler(async (req: AuthRequest, res: Response) => {
   const userId = req.user._id;
   const userRole = req.user.role;
 
-  // Parallel Execution: Run all independent queries at the same time
+  // Parallel Execution
+  // FIX: Removed .lean() from countDocuments as it returns a number directly in Promise
   const [totalProjects, activeProjects, totalUsers, budgetStats, hoursStats] = await Promise.all([
-    Project.countDocuments().lean(), // lean() for speed
-    Project.countDocuments({ status: 'active' }).lean(),
-    User.countDocuments().lean(),
+    Project.countDocuments(), 
+    Project.countDocuments({ status: 'active' }),
+    User.countDocuments(),
     Project.aggregate([{ $group: { _id: null, total: { $sum: '$budget' } } }]),
     Task.aggregate([{ $unwind: '$timeLogs' }, { $group: { _id: null, total: { $sum: '$timeLogs.hours' } } }])
   ]);
@@ -57,9 +58,10 @@ export const getDashboardStats = asyncHandler(async (req: AuthRequest, res: Resp
     { $project: { tasks: 0 } }
   ]);
 
-  // Personal Stats Optimization
+  // Personal Stats
   let myStats = {};
 
+  // For members and managers, show their specific data
   if (userRole === 'member' || userRole === 'manager' || userRole === 'admin') {
      const myProjects = await Project.aggregate([
         {
@@ -92,7 +94,7 @@ export const getDashboardStats = asyncHandler(async (req: AuthRequest, res: Resp
      ]);
 
      const [pendingTasks, myHoursStats] = await Promise.all([
-         Task.countDocuments({ assignees: userId, status: { $ne: 'done' } }).lean(),
+         Task.countDocuments({ assignees: userId, status: { $ne: 'done' } }),
          Task.aggregate([
             { $match: { 'timeLogs.user': userId } },
             { $unwind: '$timeLogs' },

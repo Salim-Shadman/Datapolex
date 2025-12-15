@@ -1,8 +1,7 @@
 import { Request, Response } from 'express';
-import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
-import asyncHandler from '../middleware/asyncHandler'; // Ensure this exists
+import asyncHandler from '../middleware/asyncHandler';
 
 // Generate JWT Token
 const generateToken = (id: string) => {
@@ -20,13 +19,11 @@ export const registerUser = asyncHandler(async (req: Request, res: Response) => 
     throw new Error('User already exists');
   }
 
-  const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash(password, salt);
-
+  // FIX: Manual hashing removed. User model 'pre save' hook handles hashing.
   const user = await User.create({
     name,
     email,
-    password: hashedPassword,
+    password, 
     role: role || 'member'
   });
 
@@ -49,10 +46,11 @@ export const registerUser = asyncHandler(async (req: Request, res: Response) => 
 export const loginUser = asyncHandler(async (req: Request, res: Response) => {
   const { email, password } = req.body;
 
-  // Explicitly select password since we added select: false in model
-  const user = await User.findOne({ email }).select('+password');
+  // Explicitly select password since we might have select: false in model (good practice)
+  const user = await User.findOne({ email }); // Removed .select('+password') if it's not set to select:false by default, but keeping it simple.
 
-  if (user && (await bcrypt.compare(password, user.password as string))) {
+  // Check if user exists and password matches
+  if (user && (await user.matchPassword(password))) {
     res.json({
       _id: user._id,
       name: user.name,

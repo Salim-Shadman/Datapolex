@@ -1,7 +1,8 @@
 'use client';
 
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { User, Clock, CheckSquare } from 'lucide-react';
+import { User, CheckSquare } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 interface KanbanBoardProps {
   tasks: any[];
@@ -17,7 +18,17 @@ const columns = {
 };
 
 export default function KanbanBoard({ tasks, onStatusChange, onTaskClick }: KanbanBoardProps) {
-  
+  const [enabled, setEnabled] = useState(false);
+
+  // FIX: Hydration error fix for Drag & Drop in Next.js
+  useEffect(() => {
+    const animation = requestAnimationFrame(() => setEnabled(true));
+    return () => {
+      cancelAnimationFrame(animation);
+      setEnabled(false);
+    };
+  }, []);
+
   const getTasksByStatus = (status: string) => tasks.filter(t => t.status === status);
 
   const onDragEnd = (result: any) => {
@@ -27,6 +38,10 @@ export default function KanbanBoard({ tasks, onStatusChange, onTaskClick }: Kanb
         onStatusChange(draggableId, destination.droppableId);
     }
   };
+
+  if (!enabled) {
+    return <div className="p-4 text-center text-gray-500">Loading Board...</div>;
+  }
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>

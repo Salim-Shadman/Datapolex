@@ -4,14 +4,14 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import api from '@/utils/api';
 import { useAuth } from '@/context/AuthContext';
-import { Calendar, DollarSign, CheckCircle, Clock, Trash2, Edit, Plus, ChevronRight, LayoutList } from 'lucide-react'; // Edit Icon Added
+import { Calendar, DollarSign, Trash2, Edit, ChevronRight, LayoutList } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 
 // Components
 import SprintList from '@/components/SprintList';
 import TaskBoard from '@/components/TaskBoard';
-import EditProjectModal from '@/components/EditProjectModal'; // Import Modal
+import EditProjectModal from '@/components/EditProjectModal';
 
 export default function ProjectDetailsPage() {
   const { id } = useParams();
@@ -21,7 +21,7 @@ export default function ProjectDetailsPage() {
   const [project, setProject] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'board' | 'sprints'>('board');
-  const [isEditOpen, setIsEditOpen] = useState(false); // Edit Modal State
+  const [isEditOpen, setIsEditOpen] = useState(false);
 
   const fetchProject = async () => {
     try {
@@ -36,7 +36,7 @@ export default function ProjectDetailsPage() {
   };
 
   useEffect(() => {
-    fetchProject();
+    if (id) fetchProject();
   }, [id]);
 
   const handleDelete = async () => {
@@ -50,12 +50,11 @@ export default function ProjectDetailsPage() {
     }
   };
 
-  // মডাল থেকে আপডেট আসার পর প্রজেক্ট স্টেট আপডেট করা
   const handleProjectUpdate = (updatedProject: any) => {
     setProject(updatedProject);
   };
 
-  if (loading) return <div className="p-10 text-center">Loading Project...</div>;
+  if (loading) return <div className="flex h-[50vh] items-center justify-center text-gray-500">Loading Project...</div>;
   if (!project) return null;
 
   const isAdminOrManager = user?.role === 'admin' || user?.role === 'manager';
@@ -64,7 +63,7 @@ export default function ProjectDetailsPage() {
     <div className="h-[calc(100vh-6rem)] flex flex-col">
       {/* Header Section */}
       <div className="bg-white border-b border-gray-200 px-6 py-4 shadow-sm flex-shrink-0">
-         <div className="flex items-start justify-between">
+         <div className="flex flex-col md:flex-row items-start justify-between gap-4">
             <div className="flex gap-5">
                 {/* Project Thumbnail */}
                 <div className="h-20 w-32 flex-shrink-0 rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
@@ -83,9 +82,9 @@ export default function ProjectDetailsPage() {
                         <ChevronRight size={14}/>
                         <span>{project.client}</span>
                     </div>
-                    <h1 className="text-2xl font-bold text-gray-900">{project.title}</h1>
+                    <h1 className="text-2xl font-bold text-gray-900 line-clamp-1">{project.title}</h1>
                     
-                    <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
+                    <div className="flex flex-wrap items-center gap-4 mt-2 text-sm text-gray-600">
                         <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide ${
                             project.status === 'active' ? 'bg-green-100 text-green-700' : 
                             project.status === 'completed' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'
@@ -102,7 +101,6 @@ export default function ProjectDetailsPage() {
 
             {/* Action Buttons */}
             <div className="flex items-center gap-2">
-                 {/* EDIT BUTTON */}
                  {isAdminOrManager && (
                     <button 
                         onClick={() => setIsEditOpen(true)}
