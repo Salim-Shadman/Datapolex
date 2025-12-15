@@ -39,14 +39,18 @@ export const createTask = asyncHandler(async (req: Request, res: Response) => {
   res.status(201).json(populatedTask);
 });
 
-// @desc    Get all tasks
+// @desc    Get all tasks with Filters
 // @route   GET /api/tasks
 export const getTasks = asyncHandler(async (req: Request, res: Response) => {
-  const { projectId, sprintId } = req.query;
+  const { projectId, sprintId, status, priority, assignee } = req.query;
 
   let query: any = {};
   if (projectId) query.project = projectId;
   if (sprintId) query.sprint = sprintId;
+  // Filters added
+  if (status) query.status = status;
+  if (priority) query.priority = priority;
+  if (assignee) query.assignees = assignee;
 
   const tasks = await Task.find(query as any)
     .populate('assignees', 'name email avatar')
@@ -58,12 +62,20 @@ export const getTasks = asyncHandler(async (req: Request, res: Response) => {
   res.json(tasks);
 });
 
-// @desc    Update task
+// @desc    Update task (With Security Check)
 // @route   PUT /api/tasks/:id
-export const updateTask = asyncHandler(async (req: Request, res: Response) => {
+export const updateTask = asyncHandler(async (req: AuthRequest, res: Response) => {
   const task = await Task.findById(req.params.id);
 
   if (task) {
+    // FIX: Security Check - Review to Done requires Manager/Admin
+    if (task.status === 'review' && req.body.status === 'done') {
+        if (req.user.role !== 'admin' && req.user.role !== 'manager') {
+            res.status(403);
+            throw new Error('Permission denied: Only Managers can approve tasks from Review to Done.');
+        }
+    }
+
     task.title = req.body.title || task.title;
     task.description = req.body.description || task.description;
     task.status = req.body.status || task.status;
@@ -103,8 +115,6 @@ export const deleteTask = asyncHandler(async (req: Request, res: Response) => {
     throw new Error('Task not found');
   }
 });
-
-// --- FIX: MISSING FUNCTIONS RESTORED ---
 
 // @desc    Add comment
 // @route   POST /api/tasks/:id/comments

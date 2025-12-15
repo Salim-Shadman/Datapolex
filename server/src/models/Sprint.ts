@@ -3,7 +3,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 export interface ISprint extends Document {
   title: string;
   goal?: string;
-  sprintNumber: number; // ADDED: Required by assignment
+  sprintNumber: number; // ADDED: Required for auto-increment
   startDate: Date;
   endDate: Date;
   status: 'planned' | 'active' | 'completed';
@@ -50,7 +50,7 @@ const SprintSchema = new Schema<ISprint>(
   }
 );
 
-// Compound index to ensure sprint numbers are unique per project
+// Compound index: Project প্রতি Sprint Number ইউনিক হতে হবে
 SprintSchema.index({ project: 1, sprintNumber: 1 }, { unique: true });
 
 const Sprint = mongoose.model<ISprint>('Sprint', SprintSchema);

@@ -6,7 +6,8 @@ import api from '@/utils/api';
 import Link from 'next/link';
 import { FolderKanban, ListTodo, Clock, DollarSign, Briefcase, ArrowRight, CheckCircle, PlayCircle, PauseCircle, Users } from 'lucide-react';
 import ProjectThumbnail from '@/components/ProjectThumbnail';
-import { motion } from 'framer-motion'; // Animation Library
+import DashboardCharts from '@/components/DashboardCharts'; // NEW IMPORT
+import { motion } from 'framer-motion';
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -58,7 +59,6 @@ export default function DashboardPage() {
     }
   };
 
-  // Animation Variants
   const container = {
     hidden: { opacity: 0 },
     show: { opacity: 1, transition: { staggerChildren: 0.1 } }
@@ -133,7 +133,6 @@ export default function DashboardPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3 mb-8">
-            {/* Member Stats */}
             <motion.div variants={item} className="rounded-2xl bg-white p-6 shadow-sm border border-gray-100 flex items-center hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
                 <div className="p-4 rounded-xl bg-blue-50 text-blue-600 mr-5">
                     <Briefcase size={28} />
@@ -164,6 +163,13 @@ export default function DashboardPage() {
                 </div>
             </motion.div>
         </div>
+      )}
+
+      {/* NEW: Analytics Charts */}
+      {isAdminOrManager && stats.chartData && (
+        <motion.div variants={item}>
+            <DashboardCharts data={stats.chartData} />
+        </motion.div>
       )}
 
       <motion.div variants={item} className="mt-8">

@@ -4,19 +4,29 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import Cookies from 'js-cookie';
 import { useRouter } from 'next/navigation';
 
+interface User {
+  _id: string;
+  name: string;
+  email: string;
+  role: 'admin' | 'manager' | 'member';
+  avatar?: string;
+  department?: string;
+  token?: string;
+}
+
 interface AuthContextType {
-  user: any;
+  user: User | null;
   token: string | null;
   loading: boolean;
-  login: (token: string, userData: any) => void;
+  login: (token: string, userData: User) => void;
   logout: () => void;
-  updateUser: (userData: any) => void;
+  updateUser: (userData: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -27,20 +37,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (storedToken && storedUser) {
       setToken(storedToken);
-      setUser(JSON.parse(storedUser));
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (e) {
+        console.error("Failed to parse user data", e);
+        Cookies.remove('token');
+        localStorage.removeItem('user');
+      }
     }
     setLoading(false);
   }, []);
 
-  // ✅ FIX: Login ফাংশনে রিডাইরেক্ট ফিরিয়ে আনা হয়েছে
-  const login = (newToken: string, userData: any) => {
+  const login = (newToken: string, userData: User) => {
     setToken(newToken);
     setUser(userData);
     
     Cookies.set('token', newToken, { expires: 1 });
     localStorage.setItem('user', JSON.stringify(userData));
     
-    // এই লাইনটি এখন ড্যাশবোর্ডে নিয়ে যাবে
     router.push('/dashboard');
   };
 
@@ -54,7 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     router.push('/login');
   };
 
-  const updateUser = (userData: any) => {
+  const updateUser = (userData: Partial<User>) => {
     if (!user) return;
 
     const updatedUser = { ...user, ...userData };

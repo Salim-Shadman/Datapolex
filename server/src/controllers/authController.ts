@@ -11,7 +11,7 @@ const generateToken = (id: string) => {
 // @desc    Register a new user
 // @route   POST /api/auth/register
 export const registerUser = asyncHandler(async (req: Request, res: Response) => {
-  const { name, email, password, role } = req.body;
+  const { name, email, password, role, department, skills } = req.body;
 
   const userExists = await User.findOne({ email });
   if (userExists) {
@@ -19,12 +19,14 @@ export const registerUser = asyncHandler(async (req: Request, res: Response) => 
     throw new Error('User already exists');
   }
 
-  // FIX: Manual hashing removed. User model 'pre save' hook handles hashing.
+  // FIX: Manual hashing removed. User model 'pre save' hook handles hashing automatically.
   const user = await User.create({
     name,
     email,
     password, 
-    role: role || 'member'
+    role: role || 'member',
+    department: department || 'General',
+    skills: skills || []
   });
 
   if (user) {
@@ -46,8 +48,8 @@ export const registerUser = asyncHandler(async (req: Request, res: Response) => 
 export const loginUser = asyncHandler(async (req: Request, res: Response) => {
   const { email, password } = req.body;
 
-  // Explicitly select password since we might have select: false in model (good practice)
-  const user = await User.findOne({ email }); // Removed .select('+password') if it's not set to select:false by default, but keeping it simple.
+  // Find user by email
+  const user = await User.findOne({ email });
 
   // Check if user exists and password matches
   if (user && (await user.matchPassword(password))) {

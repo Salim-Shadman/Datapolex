@@ -13,18 +13,20 @@ export const getSprints = asyncHandler(async (req: Request, res: Response) => {
      throw new Error('Project ID is required');
   }
 
+  // Sort by sprintNumber to show correct order
   const sprints = await Sprint.find({ project: projectId } as any)
-    .sort({ sprintNumber: 1 }); // Sorted by Sprint Number
+    .sort({ sprintNumber: 1 });
 
   res.json(sprints);
 });
 
-// @desc    Create a sprint
+// @desc    Create a sprint (Auto-Increment Logic Added)
 // @route   POST /api/sprints
 export const createSprint = asyncHandler(async (req: Request, res: Response) => {
   const { title, goal, startDate, endDate, project } = req.body;
 
-  // FIX: Auto-increment Sprint Number logic
+  // FIX: Auto-increment Sprint Number
+  // Find the latest sprint for this project
   const lastSprint = await Sprint.findOne({ project } as any).sort({ sprintNumber: -1 });
   const sprintNumber = lastSprint ? lastSprint.sprintNumber + 1 : 1;
 
@@ -52,7 +54,7 @@ export const updateSprint = asyncHandler(async (req: Request, res: Response) => 
     sprint.startDate = req.body.startDate || sprint.startDate;
     sprint.endDate = req.body.endDate || sprint.endDate;
     sprint.status = req.body.status || sprint.status;
-    // Note: sprintNumber is usually not editable to maintain order integrity
+    // sprintNumber should not be updated manually to preserve order
 
     const updatedSprint = await sprint.save();
     res.json(updatedSprint);
@@ -68,7 +70,7 @@ export const deleteSprint = asyncHandler(async (req: Request, res: Response) => 
   const sprint = await Sprint.findById(req.params.id);
 
   if (sprint) {
-    // Tasks moved to backlog (sprint: null)
+    // Tasks moved to backlog (sprint = null)
     await Task.updateMany(
         { sprint: sprint._id } as any,
         { $set: { sprint: null } }

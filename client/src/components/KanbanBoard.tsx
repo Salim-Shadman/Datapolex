@@ -21,6 +21,7 @@ export default function KanbanBoard({ tasks, onStatusChange, onTaskClick }: Kanb
   const [enabled, setEnabled] = useState(false);
 
   // FIX: Hydration error fix for Drag & Drop in Next.js
+  // DND library needs to access window object which is only available on client
   useEffect(() => {
     const animation = requestAnimationFrame(() => setEnabled(true));
     return () => {
@@ -40,7 +41,7 @@ export default function KanbanBoard({ tasks, onStatusChange, onTaskClick }: Kanb
   };
 
   if (!enabled) {
-    return <div className="p-4 text-center text-gray-500">Loading Board...</div>;
+    return <div className="p-4 text-center text-gray-500 animate-pulse">Loading Board...</div>;
   }
 
   return (

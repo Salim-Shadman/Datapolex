@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useForm } from 'react-hook-form';
-import api from '@/utils/api';
+import { taskService } from '@/services/taskService';
 import { X, Send, User, Clock, Paperclip, History, Activity, CheckSquare, Trash2, Play, Square } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import toast from 'react-hot-toast';
@@ -15,7 +15,6 @@ interface TaskDetailsModalProps {
   onUpdate: () => void;
 }
 
-// Helper: 1.5h -> "1h 30m"
 const formatHoursToDuration = (totalHours: number) => {
     if(!totalHours) return "0m";
     const hours = Math.floor(totalHours);
@@ -44,26 +43,21 @@ export default function TaskDetailsModal({ task, isOpen, onClose, onUpdate }: Ta
     return DOMPurify.sanitize(task.description); 
   }, [task?.description]);
 
-  // --- FIX: STATE LEAKAGE & TIMER SYNC ---
   useEffect(() => {
     if (task && isOpen) {
         setLocalSubtasks(task.subtasks || []);
-        
-        // Find timer for THIS task & THIS user
-        const myActiveTimer = task.activeTimers?.find((t: any) => t.user === user?._id);
+        const myActiveTimer = task.activeTimers?.find((t: any) => t.user?._id === user?._id || t.user === user?._id);
         
         if (myActiveTimer) {
             setIsTimerRunning(true);
             setLocalStartTime(new Date(myActiveTimer.startTime));
         } else {
-            // FIX: Explicitly RESET state if no timer found for this task
-            // This prevents showing timer from previous modal
             setIsTimerRunning(false);
             setLocalStartTime(null);
             setElapsedTime('00:00:00');
         }
     }
-  }, [task, isOpen, user]); // Re-run when task changes
+  }, [task, isOpen, user]);
 
   useEffect(() => {
     if (isTimerRunning && localStartTime) {
@@ -85,9 +79,7 @@ export default function TaskDetailsModal({ task, isOpen, onClose, onUpdate }: Ta
         }, 1000);
     } else {
         if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-        if (!isTimerRunning) setElapsedTime('00:00:00');
     }
-
     return () => {
         if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
     };
@@ -105,7 +97,6 @@ export default function TaskDetailsModal({ task, isOpen, onClose, onUpdate }: Ta
     const timeLogs = (task.timeLogs || []).map((t: any) => ({
       type: 'time_log',
       user: t.user,
-      // FORMATTED DISPLAY
       text: `logged ${formatHoursToDuration(t.hours)}`,
       date: new Date(t.date),
       id: t._id
@@ -123,6 +114,7 @@ export default function TaskDetailsModal({ task, isOpen, onClose, onUpdate }: Ta
 
   const handleToggleTimer = async () => {
     const wasRunning = isTimerRunning;
+    
     if (wasRunning) {
         setIsTimerRunning(false);
         setLocalStartTime(null);
@@ -132,12 +124,22 @@ export default function TaskDetailsModal({ task, isOpen, onClose, onUpdate }: Ta
         setLocalStartTime(new Date());
         toast.success('Timer Started');
     }
+
     try {
-        await api.post(`/tasks/${task._id}/timer`);
+        await taskService.toggleTimer(task._id);
         onUpdate();
     } catch (error) {
         setIsTimerRunning(wasRunning);
         toast.error('Failed to sync timer');
+    }
+  };
+
+  const updateTaskSubtasks = async (subtasks: any[]) => {
+    try {
+        await taskService.update(task._id, { subtasks });
+        onUpdate();
+    } catch (error) {
+        toast.error('Failed to update subtask');
     }
   };
 
@@ -162,20 +164,11 @@ export default function TaskDetailsModal({ task, isOpen, onClose, onUpdate }: Ta
     await updateTaskSubtasks(updatedSubtasks);
   };
 
-  const updateTaskSubtasks = async (subtasks: any[]) => {
-    try {
-        await api.put(`/tasks/${task._id}`, { subtasks });
-        onUpdate();
-    } catch (error) {
-        toast.error('Failed to update subtask');
-    }
-  };
-
   const onCommentSubmit = async (data: any) => {
     if (!data.text.trim()) return;
     setLoading(true);
     try {
-      await api.post(`/tasks/${task._id}/comments`, data);
+      await taskService.addComment(task._id, data.text);
       reset();
       onUpdate(); 
     } catch (error) { toast.error('Failed to add comment'); } 
@@ -187,7 +180,7 @@ export default function TaskDetailsModal({ task, isOpen, onClose, onUpdate }: Ta
         toast.error('Enter valid hours'); return;
     }
     try {
-        await api.post(`/tasks/${task._id}/log-time`, { hours: timeLogHours });
+        await taskService.logTime(task._id, Number(timeLogHours));
         setTimeLogHours('');
         toast.success('Time logged');
         onUpdate();

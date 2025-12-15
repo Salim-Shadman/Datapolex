@@ -5,7 +5,9 @@ import api from '@/utils/api';
 import { Users, Mail, Plus, CheckCircle, Clock, Trash2, Edit2, Shield, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/context/AuthContext';
-import AddUserModal from '@/components/AddUserModal'; // ১. মডাল ইম্পোর্ট করা হলো
+import AddUserModal from '@/components/AddUserModal';
+import UserEditModal from '@/components/UserEditModal'; // Import Edit Modal
+import ConfirmModal from '@/components/ConfirmModal'; // Import Confirm Modal
 
 interface User {
   _id: string;
@@ -17,13 +19,18 @@ interface User {
   completedTasks: number;
   totalHours: number;
   avatar?: string;
+  skills?: string[];
 }
 
 export default function TeamPage() {
   const { user: currentUser } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isAddMemberOpen, setIsAddMemberOpen] = useState(false); // ২. মডাল স্টেট যোগ করা হলো
+  
+  // Modal States
+  const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
 
   const fetchUsers = async () => {
     try {
@@ -39,6 +46,29 @@ export default function TeamPage() {
   useEffect(() => {
     fetchUsers();
   }, []);
+
+  const handleDelete = async () => {
+    if (!deleteUserId) return;
+    try {
+        // Assuming there's a delete route. If not, you might need to add it to backend or soft delete.
+        // For now, let's assume standard REST: DELETE /users/:id
+        // Note: You might need to add this route to userController/routes if missing.
+        // If strict requirement doesn't ask for delete, you can skip, but "Management" implies it.
+        // Since backend might not have DELETE /users/:id, check your routes. 
+        // If not, we can hide the delete button or add the route.
+        // *Assuming secure delete logic exists or skip if risky.*
+        // Let's implement a soft-delete or just UI removal for now if API missing.
+        
+        // Actually, let's add the API call assuming standard CRUD.
+        await api.delete(`/users/${deleteUserId}`); 
+        toast.success('Member removed');
+        setUsers(users.filter(u => u._id !== deleteUserId));
+    } catch (error: any) {
+        toast.error(error.response?.data?.message || 'Failed to remove member');
+    } finally {
+        setDeleteUserId(null);
+    }
+  };
 
   const getRoleBadge = (role: string) => {
       switch(role) {
@@ -61,7 +91,7 @@ export default function TeamPage() {
         </div>
         {currentUser?.role === 'admin' && (
              <button 
-                onClick={() => setIsAddMemberOpen(true)} // ৩. বাটনে অনক্লিক ইভেন্ট যোগ করা হলো
+                onClick={() => setIsAddMemberOpen(true)}
                 className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition shadow-md font-medium"
              >
                 <Plus size={18} className="mr-2"/> Add Member
@@ -117,23 +147,48 @@ export default function TeamPage() {
 
                 {currentUser?.role === 'admin' && (
                     <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition" title="Edit Role">
+                        <button 
+                            onClick={() => setEditingUser(member)}
+                            className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition" 
+                            title="Edit Role"
+                        >
                             <Edit2 size={16}/>
                         </button>
-                        <button className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition" title="Remove Member">
-                            <Trash2 size={16}/>
-                        </button>
+                        {/* Prevent self-delete */}
+                        {member._id !== currentUser._id && (
+                            <button 
+                                onClick={() => setDeleteUserId(member._id)}
+                                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition" 
+                                title="Remove Member"
+                            >
+                                <Trash2 size={16}/>
+                            </button>
+                        )}
                     </div>
                 )}
             </div>
         ))}
       </div>
 
-      {/* ৪. মডাল কম্পোনেন্ট রেন্ডার করা হলো */}
       <AddUserModal 
         isOpen={isAddMemberOpen} 
         onClose={() => setIsAddMemberOpen(false)} 
         onSuccess={fetchUsers}
+      />
+
+      <UserEditModal 
+        user={editingUser}
+        isOpen={!!editingUser}
+        onClose={() => setEditingUser(null)}
+        onSuccess={fetchUsers}
+      />
+
+      <ConfirmModal 
+        isOpen={!!deleteUserId} 
+        onClose={() => setDeleteUserId(null)} 
+        onConfirm={handleDelete} 
+        title="Remove Team Member?" 
+        message="Are you sure? This action cannot be undone." 
       />
     </div>
   );

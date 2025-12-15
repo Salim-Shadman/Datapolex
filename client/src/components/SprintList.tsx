@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Calendar, Trash2, CheckCircle, Clock } from 'lucide-react';
+import { Plus, Calendar, Trash2 } from 'lucide-react';
 import api from '@/utils/api';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/context/AuthContext';
+import ConfirmModal from '@/components/ConfirmModal';
 
 export default function SprintList({ projectId }: { projectId: string }) {
   const { user } = useAuth();
@@ -12,10 +13,12 @@ export default function SprintList({ projectId }: { projectId: string }) {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   
-  // New Sprint Form State
   const [title, setTitle] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [sprintToDelete, setSprintToDelete] = useState<string | null>(null);
 
   const fetchSprints = async () => {
     try {
@@ -52,14 +55,21 @@ export default function SprintList({ projectId }: { projectId: string }) {
     }
   };
 
-  const handleDelete = async (sprintId: string) => {
-    if(!confirm('Delete this sprint?')) return;
+  const handleDeleteClick = (sprintId: string) => {
+    setSprintToDelete(sprintId);
+    setConfirmOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!sprintToDelete) return;
     try {
-        await api.delete(`/sprints/${sprintId}`);
+        await api.delete(`/sprints/${sprintToDelete}`);
         toast.success('Sprint deleted');
-        setSprints(sprints.filter(s => s._id !== sprintId));
+        setSprints(sprints.filter(s => s._id !== sprintToDelete));
     } catch (error) {
         toast.error('Failed to delete');
+    } finally {
+        setSprintToDelete(null);
     }
   };
 
@@ -121,7 +131,7 @@ export default function SprintList({ projectId }: { projectId: string }) {
                             </p>
                         </div>
                         {isAdminOrManager && (
-                            <button onClick={() => handleDelete(sprint._id)} className="text-gray-400 hover:text-red-500">
+                            <button onClick={() => handleDeleteClick(sprint._id)} className="text-gray-400 hover:text-red-500">
                                 <Trash2 size={18} />
                             </button>
                         )}
@@ -130,6 +140,14 @@ export default function SprintList({ projectId }: { projectId: string }) {
             ))
         )}
       </div>
+
+      <ConfirmModal 
+        isOpen={confirmOpen} 
+        onClose={() => setConfirmOpen(false)} 
+        onConfirm={confirmDelete} 
+        title="Delete Sprint?" 
+        message="Are you sure you want to delete this sprint? All associated tasks will be moved to the backlog." 
+      />
     </div>
   );
 }

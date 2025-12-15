@@ -24,7 +24,6 @@ export const getProjects = asyncHandler(async (req: Request, res: Response) => {
      matchStage.client = { $regex: client, $options: 'i' };
   }
 
-  // Pagination Logic
   const pageNum = Number(page) || 1;
   const limitNum = Number(limit) || 100;
   const skip = (pageNum - 1) * limitNum;
@@ -115,7 +114,11 @@ export const getProjectById = asyncHandler(async (req: Request, res: Response) =
 export const updateProject = asyncHandler(async (req: Request, res: Response) => {
   const project = await Project.findById(req.params.id);
   if (project) {
-    const updatedProject = await Project.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    // FIX: Added { runValidators: true }
+    const updatedProject = await Project.findByIdAndUpdate(req.params.id, req.body, { 
+      new: true,
+      runValidators: true 
+    });
     res.json(updatedProject);
   } else {
     res.status(404);
@@ -126,7 +129,6 @@ export const updateProject = asyncHandler(async (req: Request, res: Response) =>
 // @desc    Delete project (Secure Transaction)
 // @route   DELETE /api/projects/:id
 export const deleteProject = asyncHandler(async (req: Request, res: Response) => {
-  // Start a MongoDB Session for Transaction
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -140,23 +142,15 @@ export const deleteProject = asyncHandler(async (req: Request, res: Response) =>
       throw new Error('Project not found');
     }
 
-    // FIX: 'as any' ব্যবহার করা হয়েছে টাইপ এরর এড়াতে
-    // 1. Delete all tasks associated with this project
     await Task.deleteMany({ project: req.params.id } as any).session(session);
-    
-    // 2. Delete all sprints associated with this project
     await Sprint.deleteMany({ project: req.params.id } as any).session(session);
-    
-    // 3. Delete the project itself
     await project.deleteOne({ session });
 
-    // Commit changes if everything is successful
     await session.commitTransaction();
     session.endSession();
 
     res.json({ message: 'Project and all associated data removed securely' });
   } catch (error) {
-    // If any error occurs, rollback all changes
     await session.abortTransaction();
     session.endSession();
     throw error;
