@@ -1,11 +1,12 @@
 import express from 'express';
-import { getUsers, updateUser, deleteUser } from '../controllers/userController';
-import { protect, authorize } from '../middleware/authMiddleware';
+import { getUsers, getUserProfile, updateUserProfile } from '../controllers/userController'; // Import added
+import { protect } from '../middleware/authMiddleware';
 
 const router = express.Router();
 
-router.get('/', protect, getUsers);
-router.put('/:id', protect, authorize('admin'), updateUser); // Only admin can update roles
-router.delete('/:id', protect, authorize('admin'), deleteUser); // Only admin can delete users
+router.route('/').get(protect, getUsers);
+router.route('/profile')
+    .get(protect, getUserProfile)
+    .put(protect, updateUserProfile); // PUT Request যোগ করা হলো
 
 export default router;

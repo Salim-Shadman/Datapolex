@@ -2,26 +2,49 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 export interface ISprint extends Document {
   title: string;
-  sprintNumber: number;
+  goal?: string; // --- NEW FIELD ADDED ---
   startDate: Date;
   endDate: Date;
-  // FIX: Changed from mongoose.Schema.Types.ObjectId to mongoose.Types.ObjectId
-  project: mongoose.Types.ObjectId; 
+  status: 'planned' | 'active' | 'completed'; // --- NEW FIELD ADDED ---
+  project: mongoose.Schema.Types.ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-const SprintSchema: Schema = new Schema(
+const SprintSchema = new Schema<ISprint>(
   {
-    title: { type: String, required: true },
-    sprintNumber: { type: Number, required: true },
-    startDate: { type: Date, required: true },
-    endDate: { type: Date, required: true },
+    title: {
+      type: String,
+      required: true,
+    },
+    goal: { // --- NEW FIELD ADDED ---
+      type: String,
+      default: '',
+    },
+    startDate: {
+      type: Date,
+      required: true,
+    },
+    endDate: {
+      type: Date,
+      required: true,
+    },
+    status: { // --- NEW FIELD ADDED ---
+      type: String,
+      enum: ['planned', 'active', 'completed'],
+      default: 'planned',
+    },
     project: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Project',
       required: true,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
-export default mongoose.model<ISprint>('Sprint', SprintSchema);
+const Sprint = mongoose.model<ISprint>('Sprint', SprintSchema);
+
+export default Sprint;

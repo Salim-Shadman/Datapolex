@@ -1,37 +1,119 @@
 import { Request, Response } from 'express';
 import Project from '../models/Project';
 import Task from '../models/Task';
+import User from '../models/User';
 import asyncHandler from '../middleware/asyncHandler';
 
-export const getDashboardStats = asyncHandler(async (req: Request, res: Response) => {
-    // 1. Project Stats
-    const totalProjects = await Project.countDocuments();
-    const activeProjects = await Project.countDocuments({ status: 'active' });
-    const completedProjects = await Project.countDocuments({ status: 'completed' });
-    
-    // 2. Budget Calculation
-    const projects = await Project.find({}, 'budget');
-    const totalBudget = projects.reduce((acc, curr) => acc + (curr.budget || 0), 0);
+interface AuthRequest extends Request {
+  user?: any;
+}
 
-    // 3. Task Stats (for Charts)
-    const tasks = await Task.find({}, 'status priority estimate actualHours');
-    
-    const taskStatusCounts = {
-        todo: tasks.filter(t => t.status === 'todo').length,
-        inProgress: tasks.filter(t => t.status === 'in-progress').length,
-        review: tasks.filter(t => t.status === 'review').length,
-        done: tasks.filter(t => t.status === 'done').length,
-    };
+// @desc    Get dashboard stats (Optimized with .lean() and Promise.all)
+// @route   GET /api/dashboard/stats
+export const getDashboardStats = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const userId = req.user._id;
+  const userRole = req.user.role;
 
-    const taskPriorityCounts = {
-        high: tasks.filter(t => t.priority === 'high').length,
-        medium: tasks.filter(t => t.priority === 'medium').length,
-        low: tasks.filter(t => t.priority === 'low').length,
-    };
+  // Parallel Execution: Run all independent queries at the same time
+  const [totalProjects, activeProjects, totalUsers, budgetStats, hoursStats] = await Promise.all([
+    Project.countDocuments().lean(), // lean() for speed
+    Project.countDocuments({ status: 'active' }).lean(),
+    User.countDocuments().lean(),
+    Project.aggregate([{ $group: { _id: null, total: { $sum: '$budget' } } }]),
+    Task.aggregate([{ $unwind: '$timeLogs' }, { $group: { _id: null, total: { $sum: '$timeLogs.hours' } } }])
+  ]);
 
-    res.json({
-        projects: { total: totalProjects, active: activeProjects, completed: completedProjects },
-        budget: totalBudget,
-        tasks: { status: taskStatusCounts, priority: taskPriorityCounts }
-    });
+  const totalBudget = budgetStats[0]?.total || 0;
+  const totalHours = hoursStats[0]?.total || 0;
+
+  // Recent Projects with optimized aggregation
+  const recentProjects = await Project.aggregate([
+    { $sort: { createdAt: -1 } },
+    { $limit: 6 },
+    {
+        $lookup: { from: 'tasks', localField: '_id', foreignField: 'project', as: 'tasks' },
+    },
+    {
+        $addFields: {
+          totalTasks: { $size: '$tasks' },
+          completedTasks: {
+            $size: {
+              $filter: { input: '$tasks', as: 'task', cond: { $eq: ['$$task.status', 'done'] } },
+            },
+          },
+        },
+    },
+    {
+        $addFields: {
+            progress: {
+                $cond: {
+                    if: { $eq: ['$totalTasks', 0] },
+                    then: 0,
+                    else: { $multiply: [{ $divide: ['$completedTasks', '$totalTasks'] }, 100] }
+                }
+            }
+        }
+    },
+    { $project: { tasks: 0 } }
+  ]);
+
+  // Personal Stats Optimization
+  let myStats = {};
+
+  if (userRole === 'member' || userRole === 'manager' || userRole === 'admin') {
+     const myProjects = await Project.aggregate([
+        {
+            $lookup: { from: 'tasks', localField: '_id', foreignField: 'project', as: 'projectTasks' }
+        },
+        { $match: { 'projectTasks.assignees': userId } },
+        { $sort: { updatedAt: -1 } },
+        {
+             $addFields: {
+                totalTasks: { $size: '$projectTasks' },
+                completedTasks: {
+                    $size: {
+                        $filter: { input: '$projectTasks', as: 'pt', cond: { $eq: ['$$pt.status', 'done'] } }
+                    }
+                }
+             }
+        },
+        {
+             $addFields: {
+                progress: {
+                    $cond: {
+                        if: { $eq: ['$totalTasks', 0] },
+                        then: 0,
+                        else: { $multiply: [{ $divide: ['$completedTasks', '$totalTasks'] }, 100] }
+                    }
+                }
+             }
+        },
+        { $project: { projectTasks: 0 } }
+     ]);
+
+     const [pendingTasks, myHoursStats] = await Promise.all([
+         Task.countDocuments({ assignees: userId, status: { $ne: 'done' } }).lean(),
+         Task.aggregate([
+            { $match: { 'timeLogs.user': userId } },
+            { $unwind: '$timeLogs' },
+            { $match: { 'timeLogs.user': userId } },
+            { $group: { _id: null, total: { $sum: '$timeLogs.hours' } } }
+         ])
+     ]);
+
+     myStats = {
+         projects: myProjects,
+         pendingTasks,
+         totalHours: myHoursStats[0]?.total || 0
+     };
+  }
+
+  res.json({
+    projects: { total: totalProjects, active: activeProjects },
+    budget: totalBudget,
+    totalHours,
+    totalUsers,
+    recentProjects,
+    myStats
+  });
 });

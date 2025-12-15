@@ -6,11 +6,13 @@ import api from '@/utils/api';
 import { useAuth } from '@/context/AuthContext';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
+import { Eye, EyeOff } from 'lucide-react'; // Icon added
 
 export default function LoginPage() {
   const { register, handleSubmit } = useForm();
   const { login } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false); // State
 
   const onSubmit = async (data: any) => {
     setLoading(true);
@@ -46,12 +48,21 @@ export default function LoginPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">Password</label>
-              <input
-                {...register('password', { required: true })}
-                type="password"
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500"
-                placeholder="********"
-              />
+              <div className="relative">
+                <input
+                    {...register('password', { required: true })}
+                    type={showPassword ? "text" : "password"}
+                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500"
+                    placeholder="********"
+                />
+                <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
           </div>
 

@@ -2,60 +2,99 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { LayoutDashboard, FolderKanban, Users, LogOut, Settings } from 'lucide-react'; // Settings Icon Added
 import { useAuth } from '@/context/AuthContext';
-import { LayoutDashboard, FolderKanban, Users, LogOut } from 'lucide-react';
-import clsx from 'clsx';
-
-const navItems = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Projects', href: '/dashboard/projects', icon: FolderKanban },
-  { name: 'Team', href: '/dashboard/team', icon: Users },
-];
+import { useState } from 'react';
+import ProfileModal from './ProfileModal'; // Import Modal
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { logout, user } = useAuth();
+  const { user, logout } = useAuth();
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+
+  const navItems = [
+    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { name: 'Projects', href: '/dashboard/projects', icon: FolderKanban },
+    { name: 'Team', href: '/dashboard/team', icon: Users },
+  ];
 
   return (
-    <div className="flex h-screen w-64 flex-col bg-gray-900 text-white">
-      <div className="flex h-16 items-center justify-center border-b border-gray-800">
-        <h1 className="text-xl font-bold">MPMS</h1>
-      </div>
-      
-      <div className="p-4 border-b border-gray-800">
-        <p className="text-sm text-gray-400">Welcome,</p>
-        <p className="font-semibold truncate">{user?.name}</p>
-        <span className="text-xs px-2 py-0.5 rounded bg-indigo-600 capitalize">{user?.role}</span>
+    <>
+    <div className="flex h-full w-64 flex-col bg-slate-900 text-white shadow-xl">
+      {/* Logo Area */}
+      <div className="flex h-16 items-center justify-center border-b border-slate-800 bg-slate-950">
+        <h1 className="text-2xl font-bold tracking-wider text-white">MPMS</h1>
       </div>
 
-      <nav className="flex-1 space-y-1 px-2 py-4">
+      {/* Navigation Links */}
+      <nav className="flex-1 space-y-2 px-4 py-6">
         {navItems.map((item) => {
-          const Icon = item.icon;
+          const isActive = pathname === item.href;
           return (
             <Link
               key={item.name}
               href={item.href}
-              className={clsx(
-                'group flex items-center rounded-md px-2 py-2 text-sm font-medium hover:bg-gray-800 hover:text-white',
-                pathname === item.href ? 'bg-gray-800 text-white' : 'text-gray-300'
-              )}
+              className={`group flex items-center rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200 ${
+                isActive
+                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/50'
+                  : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+              }`}
             >
-              <Icon className="mr-3 h-5 w-5 flex-shrink-0" />
+              <item.icon
+                className={`mr-3 h-5 w-5 transition-colors ${
+                  isActive ? 'text-white' : 'text-slate-400 group-hover:text-white'
+                }`}
+              />
               {item.name}
             </Link>
           );
         })}
       </nav>
 
-      <div className="border-t border-gray-800 p-4">
-        <button
-          onClick={logout}
-          className="group flex w-full items-center rounded-md px-2 py-2 text-sm font-medium text-gray-300 hover:bg-red-600 hover:text-white"
+      {/* User Profile Section (Bottom) */}
+      <div className="border-t border-slate-800 p-4">
+        <div 
+            onClick={() => setIsProfileOpen(true)} // Click to open modal
+            className="flex items-center w-full rounded-lg p-2 hover:bg-slate-800 transition cursor-pointer group"
         >
-          <LogOut className="mr-3 h-5 w-5" />
-          Logout
-        </button>
+          {/* USER AVATAR DISPLAY */}
+          <div className="relative mr-3 h-10 w-10 overflow-hidden rounded-full bg-indigo-500 border-2 border-slate-600 group-hover:border-indigo-400 transition">
+            {user?.avatar ? (
+                <img src={user.avatar} alt={user.name} className="h-full w-full object-cover" />
+            ) : (
+                <span className="flex h-full w-full items-center justify-center font-bold text-white">
+                    {user?.name?.charAt(0)}
+                </span>
+            )}
+            {/* Edit Icon Overlay on Hover */}
+            <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                <Settings size={14} className="text-white"/>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-hidden">
+            <p className="truncate text-sm font-medium text-white group-hover:text-indigo-300 transition">{user?.name}</p>
+            <span className="inline-flex items-center rounded-full bg-slate-800 px-2 py-0.5 text-xs font-medium text-slate-400">
+              {user?.role}
+            </span>
+          </div>
+          
+          <button
+            onClick={(e) => {
+                e.stopPropagation(); // Prevent modal opening
+                logout();
+            }}
+            className="ml-2 rounded-full p-1.5 text-slate-400 hover:bg-slate-700 hover:text-red-400 transition"
+            title="Logout"
+          >
+            <LogOut size={18} />
+          </button>
+        </div>
       </div>
     </div>
+    
+    {/* Profile Modal */}
+    <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
+    </>
   );
 }

@@ -1,16 +1,22 @@
 import express from 'express';
-import { createProject, getProjects, getProjectById, updateProject, deleteProject } from '../controllers/projectController';
-import { protect, authorize } from '../middleware/authMiddleware';
+import {
+  getProjects,
+  createProject,
+  getProjectById,
+  updateProject,
+  deleteProject,
+} from '../controllers/projectController';
+import { protect, adminOrManager } from '../middleware/authMiddleware'; // FIX: 'authorize' সরিয়ে 'adminOrManager' আনা হলো
 
 const router = express.Router();
 
 router.route('/')
-  .post(protect, authorize('admin', 'manager'), createProject)
-  .get(protect, getProjects);
+  .get(protect, getProjects)
+  .post(protect, adminOrManager, createProject); // শুধু অ্যাডমিন/ম্যানেজার প্রোজেক্ট তৈরি করতে পারবে
 
 router.route('/:id')
   .get(protect, getProjectById)
-  .put(protect, authorize('admin', 'manager'), updateProject)
-  .delete(protect, authorize('admin', 'manager'), deleteProject);
+  .put(protect, adminOrManager, updateProject) // শুধু অ্যাডমিন/ম্যানেজার এডিট করতে পারবে
+  .delete(protect, adminOrManager, deleteProject); // শুধু অ্যাডমিন/ম্যানেজার ডিলিট করতে পারবে
 
 export default router;

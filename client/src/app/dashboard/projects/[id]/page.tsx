@@ -1,205 +1,164 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import api from '@/utils/api';
 import { useAuth } from '@/context/AuthContext';
-import SprintModal from '@/components/SprintModal';
-import TaskModal from '@/components/TaskModal';
-import TaskDetailsModal from '@/components/TaskDetailsModal';
-import KanbanBoard from '@/components/KanbanBoard';
-import ConfirmModal from '@/components/ConfirmModal'; // Import ConfirmModal
-import { Plus, Clock, User as UserIcon, Trash2, Edit, LayoutList, Kanban } from 'lucide-react';
+import { Calendar, DollarSign, CheckCircle, Clock, Trash2, Edit, Plus, ChevronRight, LayoutList } from 'lucide-react'; // Edit Icon Added
 import toast from 'react-hot-toast';
+import Link from 'next/link';
+
+// Components
+import SprintList from '@/components/SprintList';
+import TaskBoard from '@/components/TaskBoard';
+import EditProjectModal from '@/components/EditProjectModal'; // Import Modal
 
 export default function ProjectDetailsPage() {
   const { id } = useParams();
+  const router = useRouter();
   const { user } = useAuth();
   
   const [project, setProject] = useState<any>(null);
-  const [sprints, setSprints] = useState<any[]>([]);
-  const [tasks, setTasks] = useState<any[]>([]);
-  
-  // View Mode: 'list' or 'board'
-  const [viewMode, setViewMode] = useState<'list' | 'board'>('list');
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'board' | 'sprints'>('board');
+  const [isEditOpen, setIsEditOpen] = useState(false); // Edit Modal State
 
-  // Modals States
-  const [isSprintModalOpen, setIsSprintModalOpen] = useState(false);
-  const [sprintToEdit, setSprintToEdit] = useState<any>(null);
-  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
-  const [selectedSprintId, setSelectedSprintId] = useState<string | null>(null);
-  const [selectedTask, setSelectedTask] = useState<any>(null);
-  const [isTaskDetailsOpen, setIsTaskDetailsOpen] = useState(false);
-
-  // Confirm Modal States
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [confirmAction, setConfirmAction] = useState<() => void>(() => {});
-  const [confirmTitle, setConfirmTitle] = useState('');
-  const [confirmMessage, setConfirmMessage] = useState('');
-
-  const fetchProjectData = useCallback(async () => {
+  const fetchProject = async () => {
     try {
-      if(!id) return;
-      const projectRes = await api.get(`/projects/${id}`);
-      setProject(projectRes.data);
-      const sprintsRes = await api.get(`/sprints/${id}`);
-      setSprints(sprintsRes.data);
-      const tasksRes = await api.get(`/tasks?projectId=${id}`);
-      setTasks(tasksRes.data);
-    } catch (error) { console.error(error); }
+      const res = await api.get(`/projects/${id}`);
+      setProject(res.data);
+    } catch (error) {
+      toast.error('Failed to load project details');
+      router.push('/dashboard/projects');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProject();
   }, [id]);
 
-  useEffect(() => { fetchProjectData(); }, [fetchProjectData]);
-
-  const updateTaskStatus = async (taskId: string, newStatus: string) => {
-    // Optimistic Update
-    const updatedTasks = tasks.map(t => t._id === taskId ? { ...t, status: newStatus } : t);
-    setTasks(updatedTasks);
-    
+  const handleDelete = async () => {
+    if (!window.confirm('Are you sure? This will delete all sprints and tasks!')) return;
     try {
-      await api.put(`/tasks/${taskId}`, { status: newStatus });
-      toast.success('Status updated');
-      fetchProjectData(); 
-    } catch (error) { toast.error('Failed to update status'); fetchProjectData(); }
+      await api.delete(`/projects/${id}`);
+      toast.success('Project deleted');
+      router.push('/dashboard/projects');
+    } catch (error) {
+      toast.error('Failed to delete project');
+    }
   };
 
-  // --- Delete Handlers with Confirm Modal ---
-
-  const handleDeleteSprint = (sprintId: string) => {
-    // 1. Set the action to perform
-    setConfirmAction(() => async () => {
-        try {
-            await api.delete(`/sprints/${sprintId}`);
-            toast.success('Sprint deleted');
-            fetchProjectData();
-        } catch (error) {
-            toast.error('Failed to delete sprint');
-        }
-    });
-    // 2. Set Text
-    setConfirmTitle('Delete Sprint');
-    setConfirmMessage('Are you sure you want to delete this sprint? All tasks within it will be permanently removed.');
-    // 3. Open Modal
-    setConfirmOpen(true);
+  // মডাল থেকে আপডেট আসার পর প্রজেক্ট স্টেট আপডেট করা
+  const handleProjectUpdate = (updatedProject: any) => {
+    setProject(updatedProject);
   };
 
-  const handleDeleteTask = (e: React.MouseEvent, taskId: string) => {
-    e.stopPropagation(); // Stop bubbling
-    
-    setConfirmAction(() => async () => {
-        try {
-            await api.delete(`/tasks/${taskId}`);
-            toast.success('Task deleted');
-            fetchProjectData();
-        } catch (error) {
-            toast.error('Failed to delete task');
-        }
-    });
+  if (loading) return <div className="p-10 text-center">Loading Project...</div>;
+  if (!project) return null;
 
-    setConfirmTitle('Delete Task');
-    setConfirmMessage('Are you sure you want to delete this task? This action cannot be undone.');
-    setConfirmOpen(true);
-  };
-
-  // ------------------------------------------
-
-  const handleEditSprint = (sprint: any) => { setSprintToEdit(sprint); setIsSprintModalOpen(true); };
-  
-  const handleTaskClick = (task: any) => { setSelectedTask(task); setIsTaskDetailsOpen(true); };
-  
-  const openTaskModal = (sprintId: string) => { setSelectedSprintId(sprintId); setIsTaskModalOpen(true); };
-
-  if (!project) return <div className="p-8">Loading...</div>;
   const isAdminOrManager = user?.role === 'admin' || user?.role === 'manager';
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
-        <div className="flex justify-between">
-            <div><h1 className="text-3xl font-bold">{project.title}</h1><p className="text-gray-500">{project.client}</p></div>
-            <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm capitalize">{project.status}</span>
-        </div>
-      </div>
-
-      {/* Controls */}
-      <div className="flex justify-between items-center">
-        <div className="flex items-center space-x-4">
-            <h2 className="text-xl font-bold">Tasks</h2>
-            <div className="flex bg-gray-100 rounded-lg p-1">
-                <button 
-                    onClick={() => setViewMode('list')} 
-                    className={`p-2 rounded ${viewMode === 'list' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
-                    title="List View"
-                >
-                    <LayoutList size={18}/>
-                </button>
-                <button 
-                    onClick={() => setViewMode('board')} 
-                    className={`p-2 rounded ${viewMode === 'board' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
-                    title="Board View"
-                >
-                    <Kanban size={18}/>
-                </button>
-            </div>
-        </div>
-        {isAdminOrManager && (
-             <button onClick={() => { setSprintToEdit(null); setIsSprintModalOpen(true); }} className="bg-indigo-600 text-white px-4 py-2 rounded flex items-center hover:bg-indigo-700">
-                <Plus className="w-4 h-4 mr-2" /> Add Sprint
-            </button>
-        )}
-      </div>
-
-      {/* Main Content: Board or List */}
-      {viewMode === 'board' ? (
-        <KanbanBoard tasks={tasks} onStatusChange={updateTaskStatus} onTaskClick={handleTaskClick} />
-      ) : (
-        <div className="space-y-6">
-            {sprints.map((sprint) => (
-            <div key={sprint._id} className="bg-white rounded-lg shadow border border-gray-200">
-                <div className="bg-gray-50 px-6 py-4 border-b flex justify-between items-center">
-                    <div><h3 className="font-semibold">{sprint.title}</h3><p className="text-xs text-gray-500">Sprint #{sprint.sprintNumber}</p></div>
-                    {isAdminOrManager && (
-                        <div className="flex gap-2">
-                            <button onClick={() => handleEditSprint(sprint)} className="text-gray-400 hover:text-indigo-600" title="Edit Sprint"><Edit size={16}/></button>
-                            <button onClick={() => handleDeleteSprint(sprint._id)} className="text-gray-400 hover:text-red-600" title="Delete Sprint"><Trash2 size={16}/></button>
-                            <button onClick={() => openTaskModal(sprint._id)} className="text-indigo-600 text-sm flex items-center border-l pl-2"><Plus size={16}/> Add Task</button>
+    <div className="h-[calc(100vh-6rem)] flex flex-col">
+      {/* Header Section */}
+      <div className="bg-white border-b border-gray-200 px-6 py-4 shadow-sm flex-shrink-0">
+         <div className="flex items-start justify-between">
+            <div className="flex gap-5">
+                {/* Project Thumbnail */}
+                <div className="h-20 w-32 flex-shrink-0 rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
+                    {project.thumbnail ? (
+                        <img src={project.thumbnail} alt={project.title} className="h-full w-full object-cover" />
+                    ) : (
+                        <div className="h-full w-full flex items-center justify-center text-gray-400">
+                             <LayoutList size={24}/>
                         </div>
                     )}
                 </div>
-                <div className="divide-y">
-                    {tasks.filter(t => t.sprint?._id === sprint._id).map((task) => (
-                        <div key={task._id} onClick={() => handleTaskClick(task)} className="p-4 hover:bg-gray-50 flex justify-between cursor-pointer group">
-                            <div className="flex-1">
-                                <div className="flex items-center"><span className={`w-2 h-2 rounded-full mr-2 ${task.priority==='high'?'bg-red-500':'bg-green-500'}`}></span><h4 className="font-medium">{task.title}</h4></div>
-                                <div className="ml-4 text-xs text-gray-500 flex gap-3 mt-1"><span className="flex items-center"><UserIcon size={12} className="mr-1"/> {task.assignees?.[0]?.name}</span><span>Est: {task.estimate}h</span></div>
-                            </div>
-                            <div className="flex gap-3 items-center">
-                                <div onClick={e=>e.stopPropagation()}><select value={task.status} onChange={(e) => updateTaskStatus(task._id, e.target.value)} className="text-sm border-none bg-gray-100 rounded-full px-2 py-1"><option value="todo">To Do</option><option value="in-progress">In Progress</option><option value="review">Review</option><option value="done">Done</option></select></div>
-                                {isAdminOrManager && <button onClick={(e) => handleDeleteTask(e, task._id)} className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100"><Trash2 size={16}/></button>}
-                            </div>
-                        </div>
-                    ))}
-                    {tasks.filter(t => t.sprint?._id === sprint._id).length === 0 && <div className="p-4 text-center text-sm text-gray-400">No tasks</div>}
+
+                <div>
+                    <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+                        <Link href="/dashboard/projects" className="hover:text-indigo-600">Projects</Link>
+                        <ChevronRight size={14}/>
+                        <span>{project.client}</span>
+                    </div>
+                    <h1 className="text-2xl font-bold text-gray-900">{project.title}</h1>
+                    
+                    <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
+                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide ${
+                            project.status === 'active' ? 'bg-green-100 text-green-700' : 
+                            project.status === 'completed' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'
+                        }`}>
+                            {project.status}
+                        </span>
+                        <span className="flex items-center"><Calendar size={14} className="mr-1"/> {new Date(project.startDate).toLocaleDateString()} - {new Date(project.endDate).toLocaleDateString()}</span>
+                        {project.budget > 0 && (
+                            <span className="flex items-center font-medium text-gray-900"><DollarSign size={14} className="mr-1 text-gray-400"/> {project.budget.toLocaleString()}</span>
+                        )}
+                    </div>
                 </div>
             </div>
-            ))}
-        </div>
-      )}
 
-      {/* Modals */}
-      <SprintModal isOpen={isSprintModalOpen} onClose={() => setIsSprintModalOpen(false)} projectId={id as string} onSuccess={fetchProjectData} sprintToEdit={sprintToEdit} />
-      <TaskModal isOpen={isTaskModalOpen} onClose={() => setIsTaskModalOpen(false)} projectId={id as string} sprintId={selectedSprintId} onSuccess={fetchProjectData} />
-      <TaskDetailsModal task={selectedTask} isOpen={isTaskDetailsOpen} onClose={() => setIsTaskDetailsOpen(false)} onUpdate={fetchProjectData} />
-      
-      {/* Confirm Modal */}
-      <ConfirmModal 
-        isOpen={confirmOpen} 
-        onClose={() => setConfirmOpen(false)} 
-        onConfirm={confirmAction} 
-        title={confirmTitle} 
-        message={confirmMessage} 
-      />
+            {/* Action Buttons */}
+            <div className="flex items-center gap-2">
+                 {/* EDIT BUTTON */}
+                 {isAdminOrManager && (
+                    <button 
+                        onClick={() => setIsEditOpen(true)}
+                        className="flex items-center px-3 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium text-sm transition"
+                    >
+                        <Edit size={16} className="mr-2"/> Edit
+                    </button>
+                 )}
+                 
+                 {isAdminOrManager && (
+                    <button 
+                        onClick={handleDelete}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                        title="Delete Project"
+                    >
+                        <Trash2 size={20}/>
+                    </button>
+                 )}
+            </div>
+         </div>
+
+         {/* Navigation Tabs */}
+         <div className="flex items-center gap-6 mt-6 border-b border-gray-100">
+            <button 
+                onClick={() => setActiveTab('board')}
+                className={`pb-3 text-sm font-medium border-b-2 transition ${activeTab === 'board' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+            >
+                Task Board
+            </button>
+            <button 
+                onClick={() => setActiveTab('sprints')}
+                className={`pb-3 text-sm font-medium border-b-2 transition ${activeTab === 'sprints' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+            >
+                Sprints & Timeline
+            </button>
+         </div>
+      </div>
+
+      {/* Main Content Area (Scrollable) */}
+      <div className="flex-1 overflow-x-auto bg-gray-50 p-6">
+        {activeTab === 'board' ? (
+            <TaskBoard projectId={id as string} />
+        ) : (
+            <SprintList projectId={id as string} />
+        )}
+      </div>
+
+      {/* Edit Modal */}
+      {isAdminOrManager && (
+        <EditProjectModal 
+            isOpen={isEditOpen} 
+            onClose={() => setIsEditOpen(false)} 
+            project={project}
+            onUpdate={handleProjectUpdate}
+        />
+      )}
     </div>
   );
 }

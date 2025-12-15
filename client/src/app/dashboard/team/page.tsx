@@ -1,34 +1,34 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import api from '@/utils/api';
-import { useAuth } from '@/context/AuthContext';
-import { Mail, Shield, Trash2, Edit } from 'lucide-react';
+import { Users, Mail, Plus, CheckCircle, Clock, Trash2, Edit2, Shield, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
-import UserEditModal from '@/components/UserEditModal';
+import { useAuth } from '@/context/AuthContext';
 
 interface User {
   _id: string;
   name: string;
   email: string;
   role: string;
+  department: string;
+  totalTasks: number;
+  completedTasks: number; // Added
+  totalHours: number;
+  avatar?: string;
 }
 
 export default function TeamPage() {
   const { user: currentUser } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  
-  // Modal State
-  const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const fetchUsers = async () => {
     try {
       const res = await api.get('/users');
       setUsers(res.data);
     } catch (error) {
-      console.error('Error fetching users:', error);
+      toast.error('Failed to load team members');
     } finally {
       setLoading(false);
     }
@@ -38,92 +38,91 @@ export default function TeamPage() {
     fetchUsers();
   }, []);
 
-  // Handle Delete
-  const handleDelete = async (userId: string) => {
-    if(!confirm('Are you sure you want to remove this user?')) return;
-
-    try {
-        await api.delete(`/users/${userId}`);
-        toast.success('User removed successfully');
-        fetchUsers(); // Refresh list
-    } catch (error: any) {
-        toast.error(error.response?.data?.message || 'Failed to delete user');
-    }
+  const getRoleBadge = (role: string) => {
+      switch(role) {
+          case 'admin': return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-purple-100 text-purple-800 uppercase"><ShieldCheck size={10} className="mr-1"/> Admin</span>;
+          case 'manager': return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-blue-100 text-blue-800 uppercase"><Shield size={10} className="mr-1"/> Manager</span>;
+          default: return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-gray-100 text-gray-600 uppercase">Member</span>;
+      }
   };
 
-  // Handle Edit Click
-  const handleEditClick = (user: User) => {
-    setEditingUser(user);
-    setIsModalOpen(true);
-  };
-
-  if (loading) return <div className="p-8">Loading Team...</div>;
-
-  const isAdmin = currentUser?.role === 'admin';
+  if (loading) return <div className="p-8 text-center text-gray-500">Loading Team...</div>;
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Team Members</h1>
-      
-      <div className="bg-white shadow overflow-hidden rounded-lg border border-gray-200">
-        <ul role="list" className="divide-y divide-gray-200">
-          {users.map((member) => (
-            <li key={member._id} className="px-6 py-4 hover:bg-gray-50 transition">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0 h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-lg">
-                    {member.name.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="ml-4">
-                    <div className="text-sm font-medium text-gray-900">{member.name}</div>
-                    <div className="text-sm text-gray-500 flex items-center">
-                        <Mail className="w-3 h-3 mr-1" /> {member.email}
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-4">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize
-                    ${member.role === 'admin' ? 'bg-purple-100 text-purple-800' : 
-                      member.role === 'manager' ? 'bg-blue-100 text-blue-800' : 
-                      'bg-gray-100 text-gray-800'}`}>
-                    <Shield className="w-3 h-3 mr-1" />
-                    {member.role}
-                  </span>
-
-                  {/* Action Buttons (Only for Admin) */}
-                  {isAdmin && currentUser?._id !== member._id && (
-                    <div className="flex items-center space-x-2 border-l pl-4 border-gray-200">
-                        <button 
-                            onClick={() => handleEditClick(member)}
-                            className="text-gray-400 hover:text-indigo-600 transition"
-                            title="Change Role"
-                        >
-                            <Edit className="w-4 h-4" />
-                        </button>
-                        <button 
-                            onClick={() => handleDelete(member._id)}
-                            className="text-gray-400 hover:text-red-600 transition"
-                            title="Remove User"
-                        >
-                            <Trash2 className="w-4 h-4" />
-                        </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </li>
-          ))}
-        </ul>
+    <div className="max-w-6xl mx-auto pb-10">
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
+        <div>
+            <h1 className="text-2xl font-bold text-gray-900 flex items-center">
+                <Users className="mr-3 text-indigo-600" /> Team Members
+            </h1>
+            <p className="text-gray-500 text-sm mt-1">Manage roles, view performance, and add new members.</p>
+        </div>
+        {currentUser?.role === 'admin' && (
+             <button className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition shadow-md font-medium">
+                <Plus size={18} className="mr-2"/> Add Member
+            </button>
+        )}
       </div>
 
-      {/* Edit Modal */}
-      <UserEditModal 
-        user={editingUser} 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        onSuccess={fetchUsers} 
-      />
+      <div className="space-y-4">
+        {users.map((member) => (
+            <div key={member._id} className="bg-white rounded-xl border border-gray-100 p-5 flex flex-col md:flex-row items-center gap-6 shadow-sm hover:shadow-md transition-all group">
+                <div className="flex-shrink-0">
+                    {member.avatar ? (
+                         <img src={member.avatar} alt={member.name} className="h-14 w-14 rounded-full object-cover border-2 border-indigo-50" />
+                    ) : (
+                        <div className="h-14 w-14 rounded-full bg-indigo-50 flex items-center justify-center text-xl font-bold text-indigo-600 uppercase border-2 border-white shadow-sm">
+                            {member.name.charAt(0)}
+                        </div>
+                    )}
+                </div>
+
+                <div className="flex-1 text-center md:text-left">
+                    <div className="flex items-center justify-center md:justify-start gap-2 mb-1">
+                        <h3 className="font-bold text-gray-900 text-lg">{member.name}</h3>
+                        {getRoleBadge(member.role)}
+                    </div>
+                    <div className="text-sm text-gray-500 flex flex-col md:flex-row items-center gap-1 md:gap-4">
+                        <span className="flex items-center"><Mail size={12} className="mr-1"/> {member.email}</span>
+                    </div>
+                     <span className="inline-block mt-2 px-2 py-0.5 bg-gray-50 border border-gray-200 rounded text-[10px] font-bold text-indigo-600 uppercase tracking-wide">
+                        {member.department || 'General'}
+                    </span>
+                </div>
+
+                <div className="flex items-center gap-8 border-t md:border-t-0 md:border-l border-gray-100 pt-4 md:pt-0 md:pl-6 w-full md:w-auto justify-center">
+                    <div className="text-center">
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Tasks</p>
+                        <p className="text-lg font-bold text-gray-900 flex items-center justify-center">
+                            <CheckCircle size={14} className="text-green-500 mr-1.5"/> 
+                            <span className="text-green-600">{member.completedTasks}</span>
+                            <span className="text-gray-300 mx-1">/</span>
+                            <span>{member.totalTasks}</span>
+                        </p>
+                    </div>
+                    <div className="w-px h-8 bg-gray-100 hidden md:block"></div>
+                    <div className="text-center">
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Hours</p>
+                        <p className="text-lg font-bold text-gray-900 flex items-center justify-center">
+                            <Clock size={14} className="text-orange-500 mr-1.5"/> 
+                            {member.totalHours?.toFixed(1) || 0}h
+                        </p>
+                    </div>
+                </div>
+
+                {currentUser?.role === 'admin' && (
+                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition" title="Edit Role">
+                            <Edit2 size={16}/>
+                        </button>
+                        <button className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition" title="Remove Member">
+                            <Trash2 size={16}/>
+                        </button>
+                    </div>
+                )}
+            </div>
+        ))}
+      </div>
     </div>
   );
 }
