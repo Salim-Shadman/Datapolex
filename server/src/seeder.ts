@@ -170,7 +170,7 @@ const importData = async () => {
         // 1. Past Sprint: Mostly Done tasks
         await generateTasks(pastSprint._id, ['done'], 5); 
         
-        // 2. Active Sprint: Mix of Todo, In-Progress, Review, Done
+        // 2. Active Sprint:  of Todo, In-Progress, Review, Done
         await generateTasks(activeSprint._id, ['todo', 'in-progress', 'review', 'done'], 8);
         
         // 3. Future Sprint: Mostly Todo tasks
