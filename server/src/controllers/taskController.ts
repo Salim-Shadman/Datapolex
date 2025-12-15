@@ -47,7 +47,8 @@ export const getTasks = asyncHandler(async (req: Request, res: Response) => {
   let query: any = {};
   if (projectId) query.project = projectId;
   if (sprintId) query.sprint = sprintId;
-  // Filters added
+  
+  // FIX: Filters added
   if (status) query.status = status;
   if (priority) query.priority = priority;
   if (assignee) query.assignees = assignee;
@@ -172,7 +173,6 @@ export const toggleTimer = asyncHandler(async (req: AuthRequest, res: Response) 
   );
 
   if (activeTimerIndex > -1) {
-    // STOP TIMER
     const startTime = new Date(task.activeTimers[activeTimerIndex].startTime).getTime();
     const endTime = new Date().getTime();
     const durationHours = (endTime - startTime) / (1000 * 60 * 60);
@@ -184,7 +184,6 @@ export const toggleTimer = asyncHandler(async (req: AuthRequest, res: Response) 
     await task.save();
     res.json({ message: 'Timer stopped', duration: durationHours });
   } else {
-    // START TIMER
     task.activeTimers.push({ user: userId, startTime: new Date() } as any);
     await task.save();
     res.json({ message: 'Timer started' });

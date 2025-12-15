@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import User from '../models/User';
 import Task from '../models/Task';
-import bcrypt from 'bcryptjs';
 import asyncHandler from '../middleware/asyncHandler';
 
 interface AuthRequest extends Request {
@@ -9,7 +8,6 @@ interface AuthRequest extends Request {
 }
 
 // @desc    Get all users with Full Stats
-// @route   GET /api/users
 export const getUsers = asyncHandler(async (req: Request, res: Response) => {
   const users = await User.find({}).select('-password').sort({ createdAt: -1 }).lean();
 
@@ -34,7 +32,6 @@ export const getUsers = asyncHandler(async (req: Request, res: Response) => {
 });
 
 // @desc    Create new user (Admin)
-// @route   POST /api/users
 export const createUser = asyncHandler(async (req: Request, res: Response) => {
   const { name, email, password, role, department, skills } = req.body;
 
@@ -68,18 +65,10 @@ export const createUser = asyncHandler(async (req: Request, res: Response) => {
 });
 
 // @desc    Delete user (Admin)
-// @route   DELETE /api/users/:id
 export const deleteUser = asyncHandler(async (req: Request, res: Response) => {
   const user = await User.findById(req.params.id);
 
   if (user) {
-    // Optional: Prevent deleting the last admin
-    // const remainingAdmins = await User.countDocuments({ role: 'admin' });
-    // if (user.role === 'admin' && remainingAdmins <= 1) {
-    //     res.status(400);
-    //     throw new Error('Cannot delete the last admin');
-    // }
-
     await user.deleteOne();
     res.json({ message: 'User removed' });
   } else {
@@ -89,7 +78,6 @@ export const deleteUser = asyncHandler(async (req: Request, res: Response) => {
 });
 
 // @desc    Update user by ID (Admin)
-// @route   PUT /api/users/:id
 export const updateUser = asyncHandler(async (req: Request, res: Response) => {
   const user = await User.findById(req.params.id);
 
@@ -117,7 +105,6 @@ export const updateUser = asyncHandler(async (req: Request, res: Response) => {
 });
 
 // @desc    Get user profile
-// @route   GET /api/users/profile
 export const getUserProfile = asyncHandler(async (req: AuthRequest, res: Response) => {
   const user = await User.findById(req.user._id);
   if (user) {
@@ -137,7 +124,6 @@ export const getUserProfile = asyncHandler(async (req: AuthRequest, res: Respons
 });
 
 // @desc    Update user profile
-// @route   PUT /api/users/profile
 export const updateUserProfile = asyncHandler(async (req: AuthRequest, res: Response) => {
   const user = await User.findById(req.user._id);
   if (user) {

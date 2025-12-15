@@ -17,7 +17,7 @@ export default function TaskBoard({ projectId }: { projectId: string }) {
   const [sprints, setSprints] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   
-  // View & Filter State
+  // FIX: View & Filter State
   const [viewMode, setViewMode] = useState<'board' | 'list'>('board');
   const [filterSprint, setFilterSprint] = useState('');
   const [filterAssignee, setFilterAssignee] = useState('');
@@ -28,7 +28,7 @@ export default function TaskBoard({ projectId }: { projectId: string }) {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<any>(null);
 
-  // Fetch Sprints & Users for Filters
+  // FIX: Fetch Filters
   useEffect(() => {
     const fetchFilters = async () => {
         try {
@@ -46,6 +46,7 @@ export default function TaskBoard({ projectId }: { projectId: string }) {
   const fetchTasks = useCallback(async () => {
     setLoading(true);
     try {
+      // FIX: Apply Filters
       const filters: any = { projectId };
       if (filterSprint) filters.sprintId = filterSprint;
       if (filterAssignee) filters.assignee = filterAssignee;
@@ -174,7 +175,7 @@ export default function TaskBoard({ projectId }: { projectId: string }) {
                 onTaskClick={handleTaskClick} 
              />
          ) : (
-             /* Simple Table View */
+             /* FIX: List View Added */
              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm h-full overflow-y-auto">
                  <table className="w-full text-sm text-left">
                      <thead className="bg-gray-50 text-gray-500 font-medium border-b border-gray-200">

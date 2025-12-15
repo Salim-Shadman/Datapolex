@@ -15,10 +15,10 @@ router.route('/')
     .get(protect, getUsers)
     .post(protect, admin, createUser);
 
-// Admin routes to manage specific users
+// FIX: Delete & Update Route added
 router.route('/:id')
-    .delete(protect, admin, deleteUser) // FIX: Add Delete Route
-    .put(protect, admin, updateUser);   // FIX: Add Update Route
+    .delete(protect, admin, deleteUser)
+    .put(protect, admin, updateUser);
 
 router.route('/profile')
     .get(protect, getUserProfile)
