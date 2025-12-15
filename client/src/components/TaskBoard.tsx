@@ -2,12 +2,22 @@
 
 import { useState, useEffect } from 'react';
 import api from '@/utils/api';
-import { Plus, MoreHorizontal } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
+import KanbanBoard from './KanbanBoard'; // Drag & Drop Board
+import TaskModal from './TaskModal'; // Create Task
+import TaskDetailsModal from './TaskDetailsModal'; // View/Edit/Timer
+import { useAuth } from '@/context/AuthContext';
 
 export default function TaskBoard({ projectId }: { projectId: string }) {
+  const { user } = useAuth();
   const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Modals State
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<any>(null);
 
   const fetchTasks = async () => {
     try {
@@ -15,6 +25,7 @@ export default function TaskBoard({ projectId }: { projectId: string }) {
       setTasks(res.data);
     } catch (error) {
       console.error(error);
+      toast.error('Failed to load tasks');
     } finally {
       setLoading(false);
     }
@@ -24,66 +35,73 @@ export default function TaskBoard({ projectId }: { projectId: string }) {
     fetchTasks();
   }, [projectId]);
 
-  const columns = [
-    { id: 'todo', label: 'To Do', color: 'bg-gray-100' },
-    { id: 'in-progress', label: 'In Progress', color: 'bg-blue-50' },
-    { id: 'review', label: 'Review', color: 'bg-yellow-50' },
-    { id: 'done', label: 'Done', color: 'bg-green-50' },
-  ];
+  // Handle Drag & Drop Status Change
+  const handleStatusChange = async (taskId: string, newStatus: string) => {
+    // Optimistic Update (UI change immediately)
+    const updatedTasks = tasks.map(t => 
+        t._id === taskId ? { ...t, status: newStatus } : t
+    );
+    setTasks(updatedTasks);
 
-  if (loading) return <div>Loading Board...</div>;
+    try {
+        await api.put(`/tasks/${taskId}`, { status: newStatus });
+    } catch (error) {
+        toast.error('Failed to update status');
+        fetchTasks(); // Revert on error
+    }
+  };
+
+  // Open Details Modal
+  const handleTaskClick = (task: any) => {
+    setSelectedTask(task);
+    setIsDetailsOpen(true);
+  };
+
+  const isAdminOrManager = user?.role === 'admin' || user?.role === 'manager';
+
+  if (loading) return <div className="text-center py-10">Loading Board...</div>;
 
   return (
-    <div className="flex gap-6 min-w-[1000px] h-full pb-4">
-      {columns.map((col) => {
-        const colTasks = tasks.filter(t => t.status === col.id);
-        
-        return (
-          <div key={col.id} className={`flex-1 min-w-[280px] rounded-xl ${col.color} p-4 flex flex-col`}>
-             <div className="flex justify-between items-center mb-4">
-                <h3 className="font-bold text-gray-700 flex items-center gap-2">
-                    {col.label} 
-                    <span className="bg-white px-2 py-0.5 rounded-full text-xs shadow-sm border text-gray-500">{colTasks.length}</span>
-                </h3>
-             </div>
+    <div className="h-full flex flex-col">
+      <div className="flex justify-between items-center mb-6 px-1">
+        <h3 className="text-lg font-bold text-gray-800">Task Board</h3>
+        {isAdminOrManager && (
+            <button 
+                onClick={() => setIsCreateOpen(true)}
+                className="flex items-center px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 shadow-sm transition"
+            >
+                <Plus size={16} className="mr-2"/> New Task
+            </button>
+        )}
+      </div>
 
-             <div className="space-y-3 overflow-y-auto flex-1 pr-1 custom-scrollbar">
-                {colTasks.map((task) => (
-                    <div key={task._id} className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition cursor-pointer group">
-                        <div className="flex justify-between items-start mb-2">
-                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase ${
-                                task.priority === 'high' ? 'bg-red-50 text-red-600' :
-                                task.priority === 'medium' ? 'bg-orange-50 text-orange-600' :
-                                'bg-green-50 text-green-600'
-                            }`}>{task.priority}</span>
-                            <button className="text-gray-300 hover:text-gray-600 opacity-0 group-hover:opacity-100">
-                                <MoreHorizontal size={16} />
-                            </button>
-                        </div>
-                        <h4 className="font-semibold text-gray-800 mb-2 line-clamp-2">{task.title}</h4>
-                        <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-50">
-                            <div className="flex -space-x-2">
-                                {task.assignees?.map((u: any) => (
-                                    <div key={u._id} className="h-6 w-6 rounded-full bg-indigo-100 border-2 border-white flex items-center justify-center text-[10px] text-indigo-600 font-bold" title={u.name}>
-                                        {u.avatar ? <img src={u.avatar} className="h-full w-full rounded-full object-cover"/> : u.name.charAt(0)}
-                                    </div>
-                                ))}
-                            </div>
-                            <span className="text-xs text-gray-400 font-mono">
-                                {task.sprint ? 'Sprint ' + task.sprint.sprintNumber : 'Backlog'}
-                            </span>
-                        </div>
-                    </div>
-                ))}
-                {colTasks.length === 0 && (
-                    <div className="text-center py-10 border-2 border-dashed border-gray-200 rounded-lg text-gray-400 text-sm">
-                        No tasks
-                    </div>
-                )}
-             </div>
-          </div>
-        );
-      })}
+      {/* Kanban Board Component */}
+      <div className="flex-1 overflow-hidden">
+         <KanbanBoard 
+            tasks={tasks} 
+            onStatusChange={handleStatusChange} 
+            onTaskClick={handleTaskClick} 
+         />
+      </div>
+
+      {/* Create Task Modal */}
+      <TaskModal 
+        isOpen={isCreateOpen} 
+        onClose={() => setIsCreateOpen(false)} 
+        projectId={projectId}
+        sprintId={null} // Default to Backlog
+        onSuccess={fetchTasks}
+      />
+
+      {/* Task Details Modal (Timer, Comments, etc.) */}
+      {selectedTask && (
+        <TaskDetailsModal 
+            isOpen={isDetailsOpen} 
+            onClose={() => { setIsDetailsOpen(false); setSelectedTask(null); }} 
+            task={selectedTask}
+            onUpdate={fetchTasks}
+        />
+      )}
     </div>
   );
 }

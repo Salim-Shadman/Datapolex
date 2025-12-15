@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import colors from 'colors';
+// import colors from 'colors'; // Removed to avoid missing module error
 import User from './models/User';
 import Project from './models/Project';
 import Sprint from './models/Sprint';
@@ -18,11 +18,11 @@ const importData = async () => {
     await Project.deleteMany();
     await User.deleteMany();
 
-    console.log('🧹 Old Data Cleared...'.red.inverse);
+    console.log('🧹 Old Data Cleared...');
 
     // 2. Create Users
     const users = await User.create([
-      { name: 'Super Admin', email: 'admin@example.com', password: '123', role: 'admin', department: 'Headquarters', avatar: '' },
+      { name: 'Salim Admin', email: 'admin@example.com', password: '123', role: 'admin', department: 'Headquarters', avatar: '' },
       { name: 'Tanvir Manager', email: 'manager@example.com', password: '123', role: 'manager', department: 'Product', avatar: '' },
       { name: 'Sarah Lead', email: 'sarah@example.com', password: '123', role: 'manager', department: 'Engineering', avatar: '' },
       { name: 'Rafiq Dev', email: 'dev1@example.com', password: '123', role: 'member', department: 'Backend', skills: ['Node.js', 'MongoDB'], avatar: '' },
@@ -32,115 +32,114 @@ const importData = async () => {
       { name: 'Karim DevOps', email: 'devops@example.com', password: '123', role: 'member', department: 'Infrastructure', skills: ['AWS', 'Docker'], avatar: '' },
     ]);
 
-    console.log(`👥 ${users.length} Users Created...`.green);
+    console.log(`👥 ${users.length} Users Created...`);
 
     const admin = users[0]._id;
-    const members = users.slice(3).map(u => u._id); // All members (devs, qa, designers)
+    const members = users.slice(3).map(u => u._id);
 
-    // 3. Create Projects (Various Statuses)
+    // 3. Create Projects
     const projectsData = [
       {
         title: 'E-Commerce Platform Revamp',
-        description: 'Complete overhaul of the legacy shopping platform with modern tech stack.',
+        description: 'Redesigning the shopping experience with Next.js and Microservices.',
         client: 'FashionHouse Ltd.',
-        startDate: new Date('2023-01-01'),
+        startDate: new Date('2024-01-01'),
         endDate: new Date('2024-12-31'),
         budget: 50000,
         status: 'active',
         thumbnail: 'https://images.unsplash.com/photo-1556742049-0cfed4f7a07d?auto=format&fit=crop&q=80&w=300&h=200'
       },
       {
-        title: 'AI Customer Support Bot',
-        description: 'Building an intelligent chatbot using GPT-4 API for automated support.',
+        title: 'AI Chatbot Integration',
+        description: 'Integrating OpenAI API for 24/7 customer support automation.',
         client: 'TechCorp Inc.',
-        startDate: new Date('2023-06-01'),
-        endDate: new Date('2024-06-01'),
+        startDate: new Date('2024-03-01'),
+        endDate: new Date('2024-09-30'),
         budget: 15000,
         status: 'active',
         thumbnail: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&q=80&w=300&h=200'
       },
       {
-        title: 'HR Management Portal',
-        description: 'Internal tool for managing employee leaves, payroll, and performance.',
+        title: 'Internal HR Portal',
+        description: 'Employee management system with payroll, leave, and performance tracking.',
         client: 'Internal',
-        startDate: new Date('2022-01-01'),
-        endDate: new Date('2022-12-31'),
+        startDate: new Date('2023-06-01'),
+        endDate: new Date('2023-12-31'),
         budget: 25000,
         status: 'completed',
         thumbnail: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=80&w=300&h=200'
       },
       {
         title: 'Food Delivery Mobile App',
-        description: 'Cross-platform mobile app for food delivery service.',
+        description: 'Cross-platform mobile app for food delivery service using Flutter.',
         client: 'YummyFoods',
-        startDate: new Date('2024-01-01'),
-        endDate: new Date('2024-08-01'),
+        startDate: new Date('2024-06-01'),
+        endDate: new Date('2025-01-01'),
         budget: 35000,
-        status: 'planned', // Even planned projects will have sprints now
+        status: 'planned',
         thumbnail: 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&q=80&w=300&h=200'
       },
       {
         title: 'Corporate Website Redesign',
-        description: 'SEO optimized corporate website with CMS integration.',
+        description: 'SEO optimized corporate website with modern CMS integration.',
         client: 'BigBiz',
         startDate: new Date('2023-09-01'),
         endDate: new Date('2024-02-01'),
         budget: 8000,
-        status: 'review',
+        status: 'active',
         thumbnail: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=300&h=200'
       }
     ];
 
     const createdProjects = await Project.create(projectsData);
-    console.log(`🚀 ${createdProjects.length} Projects Created...`.cyan);
+    console.log(`🚀 ${createdProjects.length} Projects Created...`);
 
-    // 4. Create Sprints & Tasks for EVERY Project
+    // 4. Loop to Create Sprints & Tasks
     for (const project of createdProjects) {
         
         // --- Sprint 1: Past (Completed) ---
-        const pastSprint = await Sprint.create({
-            title: 'Sprint 1: Foundation',
-            goal: 'Setup architecture and basic UI',
-            startDate: new Date(new Date().setDate(new Date().getDate() - 30)), // 1 month ago
+        // FIX: Result cast to 'any' to avoid TS Array vs Object error
+        const pastSprint = (await Sprint.create({
+            title: 'Sprint 1: Foundation Setup',
+            goal: 'Setup architecture, DB schema and basic UI components',
+            startDate: new Date(new Date().setDate(new Date().getDate() - 30)),
             endDate: new Date(new Date().setDate(new Date().getDate() - 15)),
             status: 'completed',
             project: project._id
-        });
+        } as any)) as any;
 
         // --- Sprint 2: Current (Active) ---
-        const activeSprint = await Sprint.create({
+        const activeSprint = (await Sprint.create({
             title: 'Sprint 2: Core Features',
-            goal: 'Implement key functionalities and API',
-            startDate: new Date(new Date().setDate(new Date().getDate() - 5)), // Started 5 days ago
-            endDate: new Date(new Date().setDate(new Date().getDate() + 10)), // Ends in 10 days
+            goal: 'Implement authentication, dashboard and key API endpoints',
+            startDate: new Date(new Date().setDate(new Date().getDate() - 5)),
+            endDate: new Date(new Date().setDate(new Date().getDate() + 10)),
             status: 'active',
             project: project._id
-        });
+        } as any)) as any;
 
         // --- Sprint 3: Future (Planned) ---
-        const futureSprint = await Sprint.create({
+        const futureSprint = (await Sprint.create({
             title: 'Sprint 3: Testing & Polish',
-            goal: 'QA, Bug fixes and Deployment',
+            goal: 'QA testing, bug fixes and production deployment',
             startDate: new Date(new Date().setDate(new Date().getDate() + 15)),
             endDate: new Date(new Date().setDate(new Date().getDate() + 30)),
             status: 'planned',
             project: project._id
-        });
+        } as any)) as any;
 
         // Task Generator Helper
         const generateTasks = async (sprintId: any, statusList: string[], count: number) => {
             for (let i = 0; i < count; i++) {
                 const randomAssignee = members[Math.floor(Math.random() * members.length)];
                 const randomAssignee2 = members[Math.floor(Math.random() * members.length)];
-                const status = statusList[Math.floor(Math.random() * statusList.length)]; // Random status from list
+                const status = statusList[Math.floor(Math.random() * statusList.length)];
                 const priority = ['low', 'medium', 'high'][Math.floor(Math.random() * 3)];
 
                 const timeLogs = [];
                 let actualHours = 0;
-
-                // Add logs only for done/in-progress
                 if (status === 'done' || status === 'in-progress') {
-                    actualHours = Math.floor(Math.random() * 10) + 1;
+                    actualHours = Math.floor(Math.random() * 8) + 1;
                     timeLogs.push({
                         user: randomAssignee,
                         hours: actualHours,
@@ -148,43 +147,44 @@ const importData = async () => {
                     });
                 }
 
+                const comments = [];
+                if (status === 'done' || status === 'review') {
+                    comments.push({
+                        user: admin,
+                        text: 'Looks good! Ready for QA.',
+                        createdAt: new Date()
+                    });
+                }
+
                 await Task.create({
-                    title: `Task ${i+1} for ${sprintId ? 'Sprint' : 'Backlog'} - ${status.toUpperCase()}`,
-                    description: 'This is a mock task description to test the UI layout and responsiveness.',
+                    title: `Task ${i+1} - ${sprintId ? 'Sprint Feature' : 'Backlog Item'} (${status.toUpperCase()})`,
+                    description: 'This is a sample task description generated by the seeder script. Verify UI layout and responsiveness.',
                     project: project._id,
-                    sprint: sprintId,
+                    sprint: sprintId, 
                     assignees: [randomAssignee, randomAssignee2],
                     status: status as any,
                     priority: priority as any,
-                    dueDate: new Date(new Date().setDate(new Date().getDate() + 5)),
+                    dueDate: new Date(new Date().setDate(new Date().getDate() + 7)),
+                    estimate: Math.floor(Math.random() * 10) + 5,
                     actualHours: actualHours,
                     timeLogs: timeLogs,
-                    comments: status === 'done' || status === 'review' ? [
-                        { user: admin, text: 'Looks good, please check the PR.', createdAt: new Date() }
-                    ] : []
-                });
+                    comments: comments
+                } as any);
             }
         };
 
-        // --- Create Tasks for each Sprint ---
-        // 1. Past Sprint: Mostly Done tasks
-        await generateTasks(pastSprint._id, ['done'], 5); 
-        
-        // 2. Active Sprint: Mix of Todo, In-Progress, Review, Done
-        await generateTasks(activeSprint._id, ['todo', 'in-progress', 'review', 'done'], 8);
-        
-        // 3. Future Sprint: Mostly Todo tasks
+        // --- Call Task Generation ---
+        await generateTasks(pastSprint._id, ['done'], 6); 
+        await generateTasks(activeSprint._id, ['todo', 'in-progress', 'review', 'done'], 10);
         await generateTasks(futureSprint._id, ['todo'], 5);
-
-        // 4. Backlog (No Sprint): Todo tasks
         await generateTasks(null, ['todo', 'in-progress'], 4);
     }
 
-    console.log('✅ All Projects Populated with Full Sprints & Tasks!'.magenta);
-    console.log('🎉 Data Import Success!'.green.inverse);
+    console.log('✅ All Projects Populated with Full Sprints & Tasks!');
+    console.log('🎉 Data Import Success!');
     process.exit();
   } catch (error) {
-    console.error(`Error: ${error}`.red.inverse);
+    console.error(`Error: ${error}`);
     process.exit(1);
   }
 };

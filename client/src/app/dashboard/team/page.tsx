@@ -5,6 +5,7 @@ import api from '@/utils/api';
 import { Users, Mail, Plus, CheckCircle, Clock, Trash2, Edit2, Shield, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/context/AuthContext';
+import AddUserModal from '@/components/AddUserModal'; // ১. মডাল ইম্পোর্ট করা হলো
 
 interface User {
   _id: string;
@@ -13,7 +14,7 @@ interface User {
   role: string;
   department: string;
   totalTasks: number;
-  completedTasks: number; // Added
+  completedTasks: number;
   totalHours: number;
   avatar?: string;
 }
@@ -22,6 +23,7 @@ export default function TeamPage() {
   const { user: currentUser } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAddMemberOpen, setIsAddMemberOpen] = useState(false); // ২. মডাল স্টেট যোগ করা হলো
 
   const fetchUsers = async () => {
     try {
@@ -58,7 +60,10 @@ export default function TeamPage() {
             <p className="text-gray-500 text-sm mt-1">Manage roles, view performance, and add new members.</p>
         </div>
         {currentUser?.role === 'admin' && (
-             <button className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition shadow-md font-medium">
+             <button 
+                onClick={() => setIsAddMemberOpen(true)} // ৩. বাটনে অনক্লিক ইভেন্ট যোগ করা হলো
+                className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition shadow-md font-medium"
+             >
                 <Plus size={18} className="mr-2"/> Add Member
             </button>
         )}
@@ -123,6 +128,13 @@ export default function TeamPage() {
             </div>
         ))}
       </div>
+
+      {/* ৪. মডাল কম্পোনেন্ট রেন্ডার করা হলো */}
+      <AddUserModal 
+        isOpen={isAddMemberOpen} 
+        onClose={() => setIsAddMemberOpen(false)} 
+        onSuccess={fetchUsers}
+      />
     </div>
   );
 }

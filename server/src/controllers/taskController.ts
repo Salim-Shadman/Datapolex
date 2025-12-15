@@ -4,31 +4,34 @@ import Task from '../models/Task';
 import Project from '../models/Project';
 import asyncHandler from '../middleware/asyncHandler';
 
+interface AuthRequest extends Request {
+  user?: any;
+}
+
 // @desc    Create a task
 // @route   POST /api/tasks
 export const createTask = asyncHandler(async (req: Request, res: Response) => {
-  const { title, description, project, sprint, assignees, priority, dueDate, status } = req.body;
+  const { title, description, project, sprint, assignees, priority, dueDate, status, attachments, estimate } = req.body;
 
-  // 1. Project valid kina check
   const projectExists = await Project.findById(project);
   if (!projectExists) {
     res.status(404);
     throw new Error('Project not found');
   }
 
-  // 2. Task create
   const task = await Task.create({
     title,
     description,
     project,
-    sprint: sprint || null, // Sprint optional hote pare
+    sprint: sprint || null,
     assignees,
     priority,
     dueDate,
-    status: status || 'todo'
+    status: status || 'todo',
+    attachments: attachments || [],
+    estimate: estimate || 0
   });
 
-  // Populate data for frontend immediately
   const populatedTask = await Task.findById(task._id)
     .populate('assignees', 'name email avatar')
     .populate('sprint', 'title sprintNumber');
@@ -36,69 +39,44 @@ export const createTask = asyncHandler(async (req: Request, res: Response) => {
   res.status(201).json(populatedTask);
 });
 
-// @desc    Get all tasks (Filter by Project or Sprint)
+// @desc    Get all tasks
 // @route   GET /api/tasks
 export const getTasks = asyncHandler(async (req: Request, res: Response) => {
   const { projectId, sprintId } = req.query;
 
   let query: any = {};
+  if (projectId) query.project = projectId;
+  if (sprintId) query.sprint = sprintId;
 
-  if (projectId) {
-    query.project = projectId;
-  }
-  
-  if (sprintId) {
-    query.sprint = sprintId;
-  }
-
-  // FIX: 'as any' casting to avoid TS2769 error
   const tasks = await Task.find(query as any)
     .populate('assignees', 'name email avatar')
     .populate('sprint', 'title sprintNumber')
-    .populate('comments.user', 'name avatar') // For comments
+    .populate('comments.user', 'name avatar')
+    .populate('timeLogs.user', 'name')
     .sort({ createdAt: -1 });
 
   res.json(tasks);
 });
 
-// @desc    Update task status (Drag & Drop) or Details
+// @desc    Update task
 // @route   PUT /api/tasks/:id
 export const updateTask = asyncHandler(async (req: Request, res: Response) => {
   const task = await Task.findById(req.params.id);
 
   if (task) {
-    // Update fields if provided
     task.title = req.body.title || task.title;
     task.description = req.body.description || task.description;
     task.status = req.body.status || task.status;
     task.priority = req.body.priority || task.priority;
     task.dueDate = req.body.dueDate || task.dueDate;
+    task.estimate = req.body.estimate || task.estimate;
     
-    // Assignees update logic
-    if (req.body.assignees) {
-        task.assignees = req.body.assignees;
-    }
-    
-    // Sprint update (Moving task to another sprint)
-    if (req.body.sprint !== undefined) {
-        task.sprint = req.body.sprint;
-    }
-
-    // Time Logs Add Logic
-    if (req.body.timeLog) {
-        task.timeLogs.push(req.body.timeLog);
-        // Calculate actualHours automatically
-        task.actualHours = task.timeLogs.reduce((acc, log) => acc + log.hours, 0);
-    }
-
-    // Comments Add Logic
-    if (req.body.comment) {
-        task.comments.push(req.body.comment);
-    }
+    if (req.body.assignees) task.assignees = req.body.assignees;
+    if (req.body.sprint !== undefined) task.sprint = req.body.sprint;
+    if (req.body.subtasks) task.subtasks = req.body.subtasks;
 
     const updatedTask = await task.save();
     
-    // Return populated data
     const populatedTask = await Task.findById(updatedTask._id)
         .populate('assignees', 'name email avatar')
         .populate('sprint', 'title sprintNumber')
@@ -123,5 +101,82 @@ export const deleteTask = asyncHandler(async (req: Request, res: Response) => {
   } else {
     res.status(404);
     throw new Error('Task not found');
+  }
+});
+
+// --- FIX: MISSING FUNCTIONS RESTORED ---
+
+// @desc    Add comment
+// @route   POST /api/tasks/:id/comments
+export const addComment = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const task = await Task.findById(req.params.id);
+  if (task) {
+    const comment = {
+      user: req.user._id,
+      text: req.body.text,
+      createdAt: new Date()
+    };
+    task.comments.push(comment as any);
+    await task.save();
+    res.status(201).json({ message: 'Comment added' });
+  } else {
+    res.status(404);
+    throw new Error('Task not found');
+  }
+});
+
+// @desc    Log time
+// @route   POST /api/tasks/:id/log-time
+export const logTime = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { hours } = req.body;
+  const task = await Task.findById(req.params.id);
+  if (task) {
+    const log = {
+      user: req.user._id,
+      hours: Number(hours),
+      date: new Date()
+    };
+    task.timeLogs.push(log as any);
+    task.actualHours = task.timeLogs.reduce((acc, item) => acc + item.hours, 0);
+    await task.save();
+    res.json(task);
+  } else {
+    res.status(404);
+    throw new Error('Task not found');
+  }
+});
+
+// @desc    Toggle Timer
+// @route   POST /api/tasks/:id/timer
+export const toggleTimer = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const task = await Task.findById(req.params.id);
+  const userId = req.user._id;
+
+  if (!task) {
+    res.status(404);
+    throw new Error('Task not found');
+  }
+
+  const activeTimerIndex = task.activeTimers.findIndex(
+    (t: any) => t.user.toString() === userId.toString()
+  );
+
+  if (activeTimerIndex > -1) {
+    // STOP TIMER
+    const startTime = new Date(task.activeTimers[activeTimerIndex].startTime).getTime();
+    const endTime = new Date().getTime();
+    const durationHours = (endTime - startTime) / (1000 * 60 * 60);
+
+    task.activeTimers.splice(activeTimerIndex, 1);
+    task.timeLogs.push({ user: userId, hours: durationHours, date: new Date() } as any);
+    task.actualHours = (task.actualHours || 0) + durationHours;
+
+    await task.save();
+    res.json({ message: 'Timer stopped', duration: durationHours });
+  } else {
+    // START TIMER
+    task.activeTimers.push({ user: userId, startTime: new Date() } as any);
+    await task.save();
+    res.json({ message: 'Timer started' });
   }
 });
