@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 // --- CRITICAL FIX: Base URL Validation ---
 const baseApiUrl = process.env.NEXT_PUBLIC_API_URL || '';
 
-// নিশ্চিত করা হচ্ছে যে BASE URL এর শেষে '/api' আছে।
+// নিশ্চিত করা হচ্ছে যে BASE URL এর শেষে '/api' আছে। 
 // এটি 404 Not Found এরর প্রতিরোধ করবে।
 const finalApiUrl = baseApiUrl.endsWith('/api') ? baseApiUrl : `${baseApiUrl}/api`;
 // ------------------------------------------
@@ -38,7 +38,7 @@ api.interceptors.response.use(
 
     // 1. Handle Network Errors (Server Down / No Internet)
     if (!error.response) {
-      toast.error('Network error! Please check your connection.');
+      toast.error('Network error! Please check your connection or server status.');
       return Promise.reject(error);
     }
 
