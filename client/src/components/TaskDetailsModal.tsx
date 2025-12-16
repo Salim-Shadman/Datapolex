@@ -24,6 +24,49 @@ const formatHoursToDuration = (totalHours: number) => {
     return `${minutes}m`;
 };
 
+// OPTIMIZATION: Separated Timer Component
+function TimerDisplay({ startTime, isRunning, onToggle }: { startTime: Date | null, isRunning: boolean, onToggle: () => void }) {
+    const [elapsed, setElapsed] = useState('00:00:00');
+    
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+        if (isRunning && startTime) {
+            interval = setInterval(() => {
+                const now = new Date().getTime();
+                const start = new Date(startTime).getTime();
+                const diff = now - start;
+                if (diff >= 0) {
+                    const h = Math.floor(diff / (1000 * 60 * 60));
+                    const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    const s = Math.floor((diff % (1000 * 60)) / 1000);
+                    setElapsed(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`);
+                }
+            }, 1000);
+        } else {
+            setElapsed('00:00:00');
+        }
+        return () => clearInterval(interval);
+    }, [isRunning, startTime]);
+
+    return (
+        <div className={`p-5 rounded-xl border flex flex-col items-center justify-center transition-all shadow-sm ${isRunning ? 'bg-red-50 border-red-200 ring-2 ring-red-100' : 'bg-indigo-50 border-indigo-200'}`}>
+            {isRunning ? (
+                <div className="text-center w-full">
+                    <span className="text-red-600 font-bold text-3xl font-mono block mb-3 animate-pulse">{elapsed}</span>
+                    <button onClick={onToggle} className="flex items-center justify-center px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition w-full shadow-lg shadow-red-200 font-medium">
+                        <Square size={16} fill="currentColor" className="mr-2"/> Stop & Log
+                    </button>
+                </div>
+            ) : (
+                <button onClick={onToggle} className="flex items-center justify-center px-6 py-4 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition w-full shadow-lg shadow-indigo-200 font-bold text-lg">
+                    <Play size={20} fill="currentColor" className="mr-2"/> Start Timer
+                </button>
+            )}
+            <p className="text-xs text-gray-500 mt-3 text-center">{isRunning ? 'Recording time in progress...' : 'Click start to track your work'}</p>
+        </div>
+    );
+}
+
 export default function TaskDetailsModal({ task, isOpen, onClose, onUpdate }: TaskDetailsModalProps) {
   const { register, handleSubmit, reset } = useForm();
   const { user } = useAuth();
@@ -34,9 +77,7 @@ export default function TaskDetailsModal({ task, isOpen, onClose, onUpdate }: Ta
   const [localSubtasks, setLocalSubtasks] = useState<any[]>([]);
 
   const [isTimerRunning, setIsTimerRunning] = useState(false);
-  const [elapsedTime, setElapsedTime] = useState('00:00:00');
   const [localStartTime, setLocalStartTime] = useState<Date | null>(null);
-  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const sanitizedDescription = useMemo(() => {
     if (!task?.description) return '<p class="text-gray-400 italic">No description provided.</p>';
@@ -54,36 +95,9 @@ export default function TaskDetailsModal({ task, isOpen, onClose, onUpdate }: Ta
         } else {
             setIsTimerRunning(false);
             setLocalStartTime(null);
-            setElapsedTime('00:00:00');
         }
     }
   }, [task, isOpen, user]);
-
-  useEffect(() => {
-    if (isTimerRunning && localStartTime) {
-        if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-
-        timerIntervalRef.current = setInterval(() => {
-            const now = new Date().getTime();
-            const start = new Date(localStartTime).getTime();
-            const diff = now - start;
-            
-            if (diff >= 0) {
-                const hours = Math.floor(diff / (1000 * 60 * 60));
-                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-                setElapsedTime(
-                    `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
-                );
-            }
-        }, 1000);
-    } else {
-        if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-    }
-    return () => {
-        if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-    };
-  }, [isTimerRunning, localStartTime]);
 
   const activities = useMemo(() => {
     if (!task) return [];
@@ -115,6 +129,7 @@ export default function TaskDetailsModal({ task, isOpen, onClose, onUpdate }: Ta
   const handleToggleTimer = async () => {
     const wasRunning = isTimerRunning;
     
+    // Optimistic Update
     if (wasRunning) {
         setIsTimerRunning(false);
         setLocalStartTime(null);
@@ -145,7 +160,7 @@ export default function TaskDetailsModal({ task, isOpen, onClose, onUpdate }: Ta
 
   const handleAddSubtask = async () => {
     if(!newSubtask.trim()) return;
-    const updatedSubtasks = [...localSubtasks, { title: newSubtask, completed: false }];
+    const updatedSubtasks = [...(localSubtasks || []), { title: newSubtask, completed: false }];
     setLocalSubtasks(updatedSubtasks);
     setNewSubtask('');
     await updateTaskSubtasks(updatedSubtasks);
@@ -202,6 +217,7 @@ export default function TaskDetailsModal({ task, isOpen, onClose, onUpdate }: Ta
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-8">
+            {/* Top Stats */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="flex items-center p-3 bg-gray-50 rounded-lg border border-gray-100">
                     <User size={18} className="mr-3 text-indigo-500" /> 
@@ -222,6 +238,7 @@ export default function TaskDetailsModal({ task, isOpen, onClose, onUpdate }: Ta
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Left Column */}
                 <div className="lg:col-span-2 space-y-8">
                     <div>
                         <h3 className="text-sm font-bold text-gray-900 flex items-center mb-3">
@@ -261,18 +278,10 @@ export default function TaskDetailsModal({ task, isOpen, onClose, onUpdate }: Ta
                     )}
                 </div>
 
+                {/* Right Column */}
                 <div className="space-y-6">
-                    <div className={`p-5 rounded-xl border flex flex-col items-center justify-center transition-all shadow-sm ${isTimerRunning ? 'bg-red-50 border-red-200 ring-2 ring-red-100' : 'bg-indigo-50 border-indigo-200'}`}>
-                        {isTimerRunning ? (
-                            <div className="text-center w-full">
-                                <span className="text-red-600 font-bold text-3xl font-mono block mb-3 animate-pulse">{elapsedTime}</span>
-                                <button onClick={handleToggleTimer} className="flex items-center justify-center px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition w-full shadow-lg shadow-red-200 font-medium"><Square size={16} fill="currentColor" className="mr-2"/> Stop & Log</button>
-                            </div>
-                        ) : (
-                            <button onClick={handleToggleTimer} className="flex items-center justify-center px-6 py-4 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition w-full shadow-lg shadow-indigo-200 font-bold text-lg"><Play size={20} fill="currentColor" className="mr-2"/> Start Timer</button>
-                        )}
-                        <p className="text-xs text-gray-500 mt-3 text-center">{isTimerRunning ? 'Recording time in progress...' : 'Click start to track your work'}</p>
-                    </div>
+                    {/* OPTIMIZED TIMER COMPONENT */}
+                    <TimerDisplay startTime={localStartTime} isRunning={isTimerRunning} onToggle={handleToggleTimer} />
 
                     {isAdminOrManager && (
                         <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">

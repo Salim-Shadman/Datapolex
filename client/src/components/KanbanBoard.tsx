@@ -2,7 +2,7 @@
 
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { User, CheckSquare } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 
 interface KanbanBoardProps {
   tasks: any[];
@@ -20,8 +20,7 @@ const columns = {
 export default function KanbanBoard({ tasks, onStatusChange, onTaskClick }: KanbanBoardProps) {
   const [enabled, setEnabled] = useState(false);
 
-  // FIX: Hydration error fix for Drag & Drop in Next.js
-  // DND library needs to access window object which is only available on client
+  // Fix hydration mismatch
   useEffect(() => {
     const animation = requestAnimationFrame(() => setEnabled(true));
     return () => {
@@ -30,18 +29,30 @@ export default function KanbanBoard({ tasks, onStatusChange, onTaskClick }: Kanb
     };
   }, []);
 
-  const getTasksByStatus = (status: string) => tasks.filter(t => t.status === status);
+  // OPTIMIZATION: Memoize filtered tasks to prevent re-calculation on every render
+  const tasksByStatus = useMemo(() => {
+    return {
+      todo: tasks.filter(t => t.status === 'todo'),
+      'in-progress': tasks.filter(t => t.status === 'in-progress'),
+      review: tasks.filter(t => t.status === 'review'),
+      done: tasks.filter(t => t.status === 'done'),
+    };
+  }, [tasks]);
 
   const onDragEnd = (result: any) => {
     if (!result.destination) return;
-    const { draggableId, destination } = result;
-    if (result.source.droppableId !== destination.droppableId) {
+    const { draggableId, destination, source } = result;
+    
+    // If dropped in same column/position, do nothing
+    if (source.droppableId === destination.droppableId && source.index === destination.index) return;
+
+    if (source.droppableId !== destination.droppableId) {
         onStatusChange(draggableId, destination.droppableId);
     }
   };
 
   if (!enabled) {
-    return <div className="p-4 text-center text-gray-500 animate-pulse">Loading Board...</div>;
+    return <div className="p-4 text-center text-gray-500">Loading Board...</div>;
   }
 
   return (
@@ -58,12 +69,12 @@ export default function KanbanBoard({ tasks, onStatusChange, onTaskClick }: Kanb
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="font-bold text-gray-700 uppercase text-xs tracking-wider">{col.title}</h3>
                     <span className="bg-white px-2 py-0.5 rounded-full text-xs font-bold text-gray-400 border border-gray-100">
-                        {getTasksByStatus(statusKey).length}
+                        {tasksByStatus[statusKey as keyof typeof tasksByStatus].length}
                     </span>
                 </div>
                 
                 <div className="space-y-3 flex-1">
-                    {getTasksByStatus(statusKey).map((task, index) => (
+                    {tasksByStatus[statusKey as keyof typeof tasksByStatus].map((task, index) => (
                         <Draggable key={task._id} draggableId={task._id} index={index}>
                             {(provided, snapshot) => (
                                 <div

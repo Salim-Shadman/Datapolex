@@ -9,7 +9,7 @@ export interface TaskFilter {
 }
 
 export const taskService = {
-  // Get All Tasks
+  // Get All Tasks (Supports Filtering)
   getAll: async (filters: TaskFilter = {}) => {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {
