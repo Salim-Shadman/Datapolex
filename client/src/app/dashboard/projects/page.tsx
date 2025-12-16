@@ -7,9 +7,8 @@ import toast from 'react-hot-toast';
 import Link from 'next/link';
 import { Plus, Calendar, DollarSign, Trash2, Search, Upload, Loader2, Image as ImageIcon, Briefcase } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import ProgressBar from '@/components/ProgressBar';
 import ConfirmModal from '@/components/ConfirmModal';
-import ProjectThumbnail from '@/components/ProjectThumbnail'; // New Import
+import ProjectThumbnail from '@/components/ProjectThumbnail';
 
 interface Project {
   _id: string;
@@ -144,14 +143,14 @@ export default function ProjectsPage() {
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {projects.map((project) => (
           <div key={project._id} className="relative group block rounded-xl bg-white shadow-sm hover:shadow-xl border border-gray-200 h-full overflow-hidden transition-all duration-300 transform hover:-translate-y-1">
-              {/* Thumbnail with Error Handling */}
+              {/* RESTORED DESIGN: Passing children directly */}
               <ProjectThumbnail 
                 src={project.thumbnail} 
                 alt={project.title} 
                 className="h-40 w-full"
               >
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-60"></div>
-                  <span className={`absolute bottom-3 left-3 px-2 py-1 text-xs rounded-full font-bold uppercase tracking-wider backdrop-blur-md 
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-60 pointer-events-none"></div>
+                  <span className={`absolute bottom-3 left-3 px-2 py-1 text-xs rounded-full font-bold uppercase tracking-wider backdrop-blur-md z-10 
                     ${project.status === 'active' ? 'bg-green-500/90 text-white' : 'bg-gray-500/90 text-white'}`}>
                     {project.status}
                   </span>
@@ -159,7 +158,7 @@ export default function ProjectsPage() {
                   {isAdminOrManager && (
                     <button 
                         onClick={(e) => handleDeleteClick(e, project._id)} 
-                        className="absolute top-2 right-2 p-2 bg-white/90 text-gray-500 hover:text-red-600 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all hover:scale-110"
+                        className="absolute top-2 right-2 p-2 bg-white/90 text-gray-500 hover:text-red-600 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all hover:scale-110 z-20 cursor-pointer"
                         title="Delete Project"
                     >
                         <Trash2 size={16} />

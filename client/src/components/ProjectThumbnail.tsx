@@ -15,7 +15,7 @@ export default function ProjectThumbnail({ src, alt, className, children }: Proj
   const [imageError, setImageError] = useState(false);
 
   return (
-    <div className={`${className} relative overflow-hidden bg-gray-100`}>
+    <div className={`${className} relative overflow-hidden bg-gray-100 group`}>
       {!src || imageError ? (
         <div className="w-full h-full flex items-center justify-center bg-gray-50 border-b border-gray-100">
           <ImageIcon className="text-gray-300 w-8 h-8 opacity-50" />
@@ -31,7 +31,7 @@ export default function ProjectThumbnail({ src, alt, className, children }: Proj
         />
       )}
       
-      {/* Overlays (Gradient, Badges, Buttons) */}
+      {/* This renders your custom overlays (Gradient, Status, Buttons) */}
       {children}
     </div>
   );
