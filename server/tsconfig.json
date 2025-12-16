@@ -29,10 +29,11 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts"
+    // FIX: "../server/src/seeder.ts" লাইনটি এখান থেকে মুছে ফেলা হলো
   ],
   "exclude": [
     "node_modules",
-    "../server",     // নিশ্চিতভাবে পুরো সার্ভার ফোল্ডার এক্সক্লুড করা হলো
-    "../server/**"  // এবং ভেতরের সবকিছু
+    "../server",     // FIX: অতিরিক্ত গার্ড, যদিও এখন include ঠিক
+    "../server/**"  
   ]
 }
