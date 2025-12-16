@@ -50,26 +50,12 @@ const allowedOrigins = [
   /https:\/\/datapolex-.*\.vercel\.app$/, 
 ].filter(Boolean);
 
-app.use(cors({
-  origin: (origin, callback) => {
-    // Check against explicit strings and RegEx patterns
-    const isAllowed = allowedOrigins.some(ao => {
-        if (ao instanceof RegExp) {
-            return ao.test(origin || '');
-        }
-        return ao === origin;
-    });
+// server/src/server.ts এর cors অংশটি এভাবে পরিবর্তন করো:
 
-    if (!origin || isAllowed) {
-      callback(null, true);
-    } else {
-      // FIX: Debugging এর জন্য স্পষ্ট এরর মেসেজ
-      callback(new Error(`Not allowed by CORS: ${origin}`));
-    }
-  },
+app.use(cors({
+  origin: '*', // সবার জন্য অনুমতি (শুধুমাত্র ডিবাগ করার জন্য)
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  // FIX: Authorization header এবং x-requested-with header যোগ করা হলো
   allowedHeaders: ['Content-Type', 'Authorization', 'x-requested-with']
 }));
 
