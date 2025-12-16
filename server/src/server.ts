@@ -20,7 +20,7 @@ import { sanitizeData } from './middleware/sanitizeMiddleware';
 
 dotenv.config();
 
-// FIX: Production Safety Check এ process.exit() রিমুভ করা হলো
+// FIX: Production Safety Check এ process.exit() রিমুভ করা হয়েছে
 if (!process.env.MONGO_URI || !process.env.JWT_SECRET) {
   console.error('FATAL ERROR: MONGO_URI or JWT_SECRET is not defined in .env (Check Vercel ENV)');
 }
@@ -30,29 +30,47 @@ connectDB();
 
 const app = express();
 
-// 1. Security & CORS
+// 1. Security & Helmet
 app.use(helmet({ 
   crossOriginResourcePolicy: false, 
 }));
 
-// CORS Configuration Update for Vercel
+// ===========================================
+// CRITICAL FIX: CORS Configuration
+// ===========================================
 const allowedOrigins = [
   'http://localhost:3000', 
   process.env.CLIENT_URL,
-  'https://datapolex.vercel.app', 
+  
+  // FIX: ক্লায়েন্ট-এর লাইভ ডোমেইন যোগ করা হলো
+  'https://datapolex-client.vercel.app', 
+  
+  // FIX: Vercel প্রিভিউ ডোমেইন এবং অন্য কোনো Vercel ডোমেইন Allow করার জন্য RegEx
+  /https:\/\/datapolex-client-git-.*\.vercel\.app$/,
+  /https:\/\/datapolex-.*\.vercel\.app$/, 
 ].filter(Boolean);
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
+    // Check against explicit strings and RegEx patterns
+    const isAllowed = allowedOrigins.some(ao => {
+        if (ao instanceof RegExp) {
+            return ao.test(origin || '');
+        }
+        return ao === origin;
+    });
+
+    if (!origin || isAllowed) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      // FIX: Debugging এর জন্য স্পষ্ট এরর মেসেজ
+      callback(new Error(`Not allowed by CORS: ${origin}`));
     }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  // FIX: x-requested-with header যোগ করা হলো
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-requested-with']
 }));
 
 // 2. Middleware
@@ -89,7 +107,6 @@ app.use('/api/dashboard', dashboardRoutes);
 
 // Health Check Route
 app.get('/', (req, res) => { 
-  // Vercel ফাংশন লোড হয়েছে কিনা চেক করার জন্য
   res.status(200).json({ 
     status: 'active', 
     message: 'MPMS API is running securely on Vercel.',
@@ -102,23 +119,19 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-// ==========================================
-// VERCEL DEPLOYMENT FIX (CRITICAL STEP)
-// ==========================================
-// Production এ app.listen কল হবে না।
+// VERCEL DEPLOYMENT FIX (app.listen only for local)
 if (process.env.NODE_ENV !== 'production') {
   const server = app.listen(PORT, () => {
     console.log(`🚀 Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
   });
 
-  // Graceful Shutdown (Local-এ রাখা হলো, তবে production-এর জন্য process.exit() এড়ানো হয়েছে)
+  // Graceful Shutdown (Local only)
   const gracefulShutdown = () => {
     console.log('🔄 Received kill signal, shutting down gracefully...');
     server.close(() => {
       console.log('🛑 Closed out remaining connections.');
       mongoose.connection.close(false).then(() => {
           console.log('🍃 MongoDB connection closed.');
-          // FIX: LOCAL process.exit(0) রিমুভ করা হলো বা এড়িয়ে যাওয়া হলো
       });
     });
   };
