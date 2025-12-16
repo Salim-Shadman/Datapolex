@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 
-// FIX: Prevents NoSQL Injection by removing '$' and '.' from input keys
+// Recursive function to remove keys starting with '$' or containing '.'
 const sanitize = (obj: any): any => {
     if (obj instanceof Array) {
         return obj.map((i) => sanitize(i));
@@ -23,8 +23,26 @@ const sanitize = (obj: any): any => {
 };
 
 export const sanitizeData = (req: Request, res: Response, next: NextFunction) => {
-    req.body = sanitize(req.body);
-    req.query = sanitize(req.query);
-    req.params = sanitize(req.params);
+    // 1. Sanitize Body (Safe to replace)
+    if (req.body) {
+        req.body = sanitize(req.body);
+    }
+
+    // 2. Sanitize Query (In-place modification to avoid "getter" error)
+    if (req.query) {
+        const sanitizedQuery = sanitize(req.query);
+        // Clear original keys and copy sanitized ones
+        Object.keys(req.query).forEach((key) => delete req.query[key]);
+        Object.assign(req.query, sanitizedQuery);
+    }
+
+    // 3. Sanitize Params (In-place modification)
+    if (req.params) {
+        const sanitizedParams = sanitize(req.params);
+        // Clear original keys and copy sanitized ones
+        Object.keys(req.params).forEach((key) => delete req.params[key]);
+        Object.assign(req.params, sanitizedParams);
+    }
+
     next();
 };

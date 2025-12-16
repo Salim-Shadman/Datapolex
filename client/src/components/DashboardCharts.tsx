@@ -21,7 +21,8 @@ export default function DashboardCharts({ data }: DashboardChartsProps) {
       {/* Pie Chart: Task Status */}
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
         <h3 className="text-lg font-bold text-gray-900 mb-4">Task Status Distribution</h3>
-        <div className="h-64 w-full">
+        {/* FIX: Added style={{ width: '100%', height: 250 }} to parent explicitly */}
+        <div style={{ width: '100%', height: 250 }}>
             <ResponsiveContainer width="100%" height="100%">
             <PieChart>
                 <Pie
@@ -47,7 +48,7 @@ export default function DashboardCharts({ data }: DashboardChartsProps) {
       {/* Bar Chart: Simple Visualization */}
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
         <h3 className="text-lg font-bold text-gray-900 mb-4">Task Overview</h3>
-        <div className="h-64 w-full">
+        <div style={{ width: '100%', height: 250 }}>
             <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data}>
                 <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />

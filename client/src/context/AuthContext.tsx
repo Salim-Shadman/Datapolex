@@ -32,7 +32,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  // FIX: Verify session with server on mount instead of trusting localStorage blindly
   useEffect(() => {
     const initAuth = async () => {
       const storedToken = Cookies.get('token');
@@ -40,27 +39,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (storedToken) {
         setToken(storedToken);
-        // Optimistically set user from storage first for speed
+        
+        // Safety: Prevent crash if LocalStorage is corrupted
         if (storedUser) {
-           setUser(JSON.parse(storedUser));
+           try {
+             setUser(JSON.parse(storedUser));
+           } catch (e) {
+             console.error("Failed to parse user data:", e);
+             localStorage.removeItem('user');
+           }
         }
 
         try {
-          // Verify with server to get fresh data (Role/Permissions updates)
+          // Verify with server to get fresh data
           const { data } = await api.get('/users/profile');
           setUser(data);
           localStorage.setItem('user', JSON.stringify(data));
         } catch (error) {
-          console.error("Session invalid:", error);
-          // If 401, api interceptor handles it, but safety fallback here:
-          if (!storedUser) { // Only force logout if we didn't have a cached user
+          console.error("Session verification failed:", error);
+          // Only log out if we don't have a cached user to show
+          if (!storedUser) { 
              Cookies.remove('token');
              localStorage.removeItem('user');
           }
         }
       } else {
-        // Clear cleanup just in case
         localStorage.removeItem('user');
+        setUser(null);
       }
       setLoading(false);
     };
@@ -72,7 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(newToken);
     setUser(userData);
     
-    Cookies.set('token', newToken, { expires: 1 });
+    Cookies.set('token', newToken, { expires: 1, secure: process.env.NODE_ENV === 'production' });
     localStorage.setItem('user', JSON.stringify(userData));
     
     router.push('/dashboard');
@@ -98,7 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     if (userData.token) {
         setToken(userData.token);
-        Cookies.set('token', userData.token, { expires: 1 });
+        Cookies.set('token', userData.token, { expires: 1, secure: process.env.NODE_ENV === 'production' });
     }
   };
 

@@ -6,15 +6,22 @@ export interface TaskFilter {
   status?: string;
   assignee?: string;
   priority?: string;
+  // Pagination Support Added
+  page?: number;
+  limit?: number;
 }
 
 export const taskService = {
-  // Get All Tasks (Supports Filtering)
+  // Get All Tasks (Supports Filtering & Pagination)
   getAll: async (filters: TaskFilter = {}) => {
     const params = new URLSearchParams();
+    
     Object.entries(filters).forEach(([key, value]) => {
-      if (value) params.append(key, value);
+      if (value !== undefined && value !== null && value !== '') {
+        params.append(key, value.toString());
+      }
     });
+
     const { data } = await api.get('/tasks', { params });
     return data;
   },

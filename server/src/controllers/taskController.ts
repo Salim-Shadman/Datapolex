@@ -39,10 +39,10 @@ export const createTask = asyncHandler(async (req: Request, res: Response) => {
   res.status(201).json(populatedTask);
 });
 
-// @desc    Get all tasks with Filters
+// @desc    Get all tasks with Pagination & Filters
 // @route   GET /api/tasks
 export const getTasks = asyncHandler(async (req: Request, res: Response) => {
-  const { projectId, sprintId, status, priority, assignee } = req.query;
+  const { projectId, sprintId, status, priority, assignee, page, limit } = req.query;
 
   let query: any = {};
   if (projectId) query.project = projectId;
@@ -52,13 +52,19 @@ export const getTasks = asyncHandler(async (req: Request, res: Response) => {
   if (priority) query.priority = priority;
   if (assignee) query.assignees = assignee;
 
-  const tasks = await Task.find(query as any)
+  // Pagination Logic
+  const pageNum = Number(page) || 1;
+  const limitNum = Number(limit) || 50; // Default to 50 items per load
+  const skip = (pageNum - 1) * limitNum;
+
+  const tasks = await Task.find(query)
     .populate('assignees', 'name email avatar')
     .populate('sprint', 'title sprintNumber')
     .populate('comments.user', 'name avatar')
     .populate('timeLogs.user', 'name')
     .sort({ createdAt: -1 })
-    .limit(500); // FIX: Safety limit for production to prevent memory overflow
+    .skip(skip)
+    .limit(limitNum);
 
   res.json(tasks);
 });

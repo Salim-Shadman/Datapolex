@@ -8,6 +8,18 @@ import connectDB from './config/db';
 
 dotenv.config();
 
+// --- HELPER FUNCTIONS FOR RANDOM DATA ---
+const getRandomInt = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
+const getRandomElement = (arr: any[]) => arr[Math.floor(Math.random() * arr.length)];
+const getRandomDate = (start: Date, end: Date) => new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
+
+const projectPrefixes = ['Smart', 'Auto', 'Cyber', 'NextGen', 'Cloud', 'Quantum', 'Eco', 'Fin', 'Edu', 'Medi'];
+const projectSuffixes = ['System', 'Platform', 'Dashboard', 'Analytics', 'Portal', 'App', 'Hub', 'Solution', 'Engine', 'Network'];
+const clientNames = ['TechCorp', 'Globex', 'Acme Inc.', 'Stark Ind.', 'Wayne Ent.', 'Cyberdyne', 'Massive Dynamic', 'Hooli', 'Pied Piper'];
+
+const taskVerbs = ['Fix', 'Implement', 'Design', 'Refactor', 'Test', 'Deploy', 'Update', 'Optimize', 'Review', 'Document'];
+const taskNouns = ['API', 'Login', 'Dashboard', 'Database', 'UI', 'Button', 'Header', 'Footer', 'Auth', 'Payment Gateway', 'Search', 'Filters'];
+
 const importData = async () => {
   try {
     await connectDB();
@@ -20,244 +32,159 @@ const importData = async () => {
     console.log('✅ Old Data Destroyed.');
 
     // ---------------------------------------------------------
-    // 1. CREATE USERS (LOOP METHOD TO ENSURE HASHING)
+    // 1. CREATE USERS
     // ---------------------------------------------------------
     console.log('👤 Creating Users...');
     
     const usersData = [
-      {
-        name: 'Salim Shadman',
-        email: 'admin@datapolex.com',
-        password: 'password123',
-        role: 'admin',
-        department: 'Management',
-        skills: ['Leadership', 'System Architecture'],
-        avatar: 'https://i.pravatar.cc/150?u=salim'
-      },
-      {
-        name: 'Tanvir Hasan',
-        email: 'manager@datapolex.com',
-        password: 'password123',
-        role: 'manager',
-        department: 'Product',
-        skills: ['Agile', 'Scrum'],
-        avatar: 'https://i.pravatar.cc/150?u=tanvir'
-      },
-      {
-        name: 'Rahim Uddin',
-        email: 'dev1@datapolex.com',
-        password: 'password123',
-        role: 'member',
-        department: 'Engineering',
-        skills: ['React', 'Next.js'],
-        avatar: 'https://i.pravatar.cc/150?u=rahim'
-      },
-      {
-        name: 'Karim Ahmed',
-        email: 'dev2@datapolex.com',
-        password: 'password123',
-        role: 'member',
-        department: 'Engineering',
-        skills: ['Node.js', 'MongoDB'],
-        avatar: 'https://i.pravatar.cc/150?u=karim'
-      },
-      {
-        name: 'Nasreen Akter',
-        email: 'qa1@datapolex.com',
-        password: 'password123',
-        role: 'member',
-        department: 'QA',
-        skills: ['Automation', 'Jest'],
-        avatar: 'https://i.pravatar.cc/150?u=nasreen'
-      },
-      {
-        name: 'Farhana Yeasmin',
-        email: 'design1@datapolex.com',
-        password: 'password123',
-        role: 'member',
-        department: 'Design',
-        skills: ['Figma', 'UI/UX'],
-        avatar: 'https://i.pravatar.cc/150?u=farhana'
-      }
+      // Core Users
+      { name: 'Salim Shadman', email: 'admin@datapolex.com', role: 'admin', department: 'Management', skills: ['Leadership'] },
+      { name: 'Tanvir Hasan', email: 'manager@datapolex.com', role: 'manager', department: 'Product', skills: ['Scrum'] },
+      { name: 'Rahim Uddin', email: 'dev1@datapolex.com', role: 'member', department: 'Engineering', skills: ['React'] },
+      { name: 'Karim Ahmed', email: 'dev2@datapolex.com', role: 'member', department: 'Engineering', skills: ['Node.js'] },
     ];
 
+    // Generate 16 more random users
+    const depts = ['Engineering', 'Design', 'QA', 'Marketing'];
+    for (let i = 5; i <= 20; i++) {
+        usersData.push({
+            name: `User ${i}`,
+            email: `user${i}@datapolex.com`,
+            role: 'member',
+            department: getRandomElement(depts),
+            skills: ['JavaScript', 'Python', 'HTML']
+        });
+    }
+
     const createdUsers = [];
-    
-    // FIX: Create users one by one to trigger 'pre-save' hook for password hashing
+    // Loop to ensure password hashing works via pre-save hook
     for (const u of usersData) {
-        const user = new User(u);
+        const user = new User({ ...u, password: 'password123', avatar: `https://i.pravatar.cc/150?u=${u.email}` });
         const savedUser = await user.save();
         createdUsers.push(savedUser);
     }
+    console.log(`✅ ${createdUsers.length} Users Created.`);
 
-    // Access users by index for relations
-    const admin = createdUsers[0];
-    const manager = createdUsers[1];
-    const dev1 = createdUsers[2];
-    const dev2 = createdUsers[3];
-    const qa1 = createdUsers[4];
-    const des1 = createdUsers[5];
 
     // ---------------------------------------------------------
     // 2. CREATE PROJECTS
     // ---------------------------------------------------------
     console.log('📁 Creating Projects...');
-    const projects = await Project.create([
-      {
-        title: 'E-Commerce Platform Revamp',
-        client: 'TechCorp Inc.',
-        description: 'Complete overhaul of the legacy e-commerce platform.',
-        startDate: new Date('2024-01-01'),
-        endDate: new Date('2024-06-30'),
-        budget: 75000,
-        status: 'active',
-        thumbnail: 'https://images.unsplash.com/photo-1556742049-0cfed4f7a07d?auto=format&fit=crop&w=800&q=80'
-      },
-      {
-        title: 'Internal HR Portal',
-        client: 'DataPollex Internal',
-        description: 'Employee self-service portal.',
-        startDate: new Date('2024-02-15'),
-        endDate: new Date('2024-05-15'),
-        budget: 20000,
-        status: 'active',
-        thumbnail: 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&w=800&q=80'
-      },
-      {
-        title: 'Mobile Banking App',
-        client: 'FinTrust Bank',
-        description: 'Secure mobile banking application.',
-        startDate: new Date('2023-11-01'),
-        endDate: new Date('2024-08-01'),
-        budget: 120000,
-        status: 'active',
-        thumbnail: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=800&q=80'
-      }
-    ] as any);
-
-    const [ecommerce, hrPortal, bankingApp] = projects;
-
-    // ---------------------------------------------------------
-    // 3. CREATE SPRINTS
-    // ---------------------------------------------------------
-    console.log('🚀 Creating Sprints...');
-    const sprints = await Sprint.create([
-      {
-        title: 'Sprint 1: Core Setup',
-        goal: 'Project infrastructure',
-        sprintNumber: 1,
-        startDate: new Date('2024-01-01'),
-        endDate: new Date('2024-01-14'),
-        status: 'completed',
-        project: ecommerce._id
-      },
-      {
-        title: 'Sprint 2: Auth & Profile',
-        goal: 'Implement JWT auth',
-        sprintNumber: 2,
-        startDate: new Date('2024-01-15'),
-        endDate: new Date('2024-01-29'),
-        status: 'active',
-        project: ecommerce._id
-      },
-      {
-        title: 'Sprint 1: UI/UX Design',
-        goal: 'Finalize wireframes',
-        sprintNumber: 1,
-        startDate: new Date('2024-02-15'),
-        endDate: new Date('2024-02-28'),
-        status: 'active',
-        project: hrPortal._id
-      }
-    ] as any);
-
-    const [ecomSprint1, ecomSprint2, hrSprint1] = sprints;
-
-    // ---------------------------------------------------------
-    // 4. CREATE TASKS
-    // ---------------------------------------------------------
-    console.log('📝 Creating Tasks...');
     
-    const tasksData: any[] = [
-      {
-        title: 'Setup Monorepo Structure',
-        description: 'Configure Turborepo.',
-        project: ecommerce._id,
-        sprint: ecomSprint1._id,
-        assignees: [dev2._id],
-        priority: 'high',
-        status: 'done',
-        estimate: 8,
-        actualHours: 8,
-        timeLogs: [{ user: dev2._id, hours: 8, date: new Date() }]
-      },
-      {
-        title: 'Implement JWT Auth',
-        description: 'Secure API endpoints.',
-        project: ecommerce._id,
-        sprint: ecomSprint2._id,
-        assignees: [dev1._id],
-        priority: 'high',
-        status: 'review',
-        estimate: 16,
-        actualHours: 14,
-        timeLogs: [{ user: dev1._id, hours: 14, date: new Date() }]
-      },
-      {
-        title: 'Dashboard Wireframes',
-        description: 'Low-fidelity wireframes.',
-        project: hrPortal._id,
-        sprint: hrSprint1._id,
-        assignees: [des1._id],
-        priority: 'medium',
-        status: 'done',
-        estimate: 10,
-        actualHours: 10,
-        timeLogs: [{ user: des1._id, hours: 10, date: new Date() }]
-      },
-      {
-        title: 'Fix Biometric Login Bug',
-        description: 'FaceID failing on iOS 17.',
-        project: bankingApp._id,
-        sprint: undefined,
-        assignees: [dev1._id],
-        priority: 'high',
-        status: 'in-progress',
-        estimate: 4,
-        actualHours: 2,
-        timeLogs: [{ user: dev1._id, hours: 2, date: new Date() }]
-      }
-    ];
+    const projectsData = [];
+    const statuses = ['planned', 'active', 'completed'];
 
-    // Generate random tasks
-    const statuses = ['todo', 'in-progress', 'review', 'done'];
-    const priorities = ['low', 'medium', 'high'];
+    for (let i = 0; i < 15; i++) {
+        const startDate = getRandomDate(new Date('2023-01-01'), new Date('2024-01-01'));
+        const endDate = new Date(startDate);
+        endDate.setMonth(endDate.getMonth() + getRandomInt(3, 12));
 
-    for (let i = 1; i <= 15; i++) {
-        const randStatus = statuses[Math.floor(Math.random() * statuses.length)];
-        const randProj = projects[Math.floor(Math.random() * projects.length)];
-        const randUser = createdUsers[Math.floor(Math.random() * createdUsers.length)];
-        
-        tasksData.push({
-            title: `Random Feature Request #${i}`,
-            description: 'Auto-generated task.',
-            project: randProj._id,
-            sprint: undefined, 
-            assignees: [randUser._id],
-            priority: priorities[Math.floor(Math.random() * priorities.length)],
-            status: randStatus,
-            estimate: Math.floor(Math.random() * 10) + 1,
-            actualHours: randStatus === 'done' ? Math.floor(Math.random() * 5) + 1 : 0,
-            timeLogs: randStatus === 'done' ? [{ user: randUser._id, hours: 2, date: new Date() }] : []
+        projectsData.push({
+            title: `${getRandomElement(projectPrefixes)} ${getRandomElement(projectSuffixes)}`,
+            client: getRandomElement(clientNames),
+            description: 'Automated generated project for testing scalability.',
+            startDate,
+            endDate,
+            budget: getRandomInt(10000, 500000),
+            status: getRandomElement(statuses),
+            thumbnail: `https://picsum.photos/seed/${i}/800/600` // Random image
         });
     }
 
-    await Task.create(tasksData);
+    // FIX 1: Added 'as any' here
+    const createdProjects = await Project.create(projectsData as any);
+    console.log(`✅ ${createdProjects.length} Projects Created.`);
 
-    console.log(`✅ ${tasksData.length} Tasks Imported.`);
-    console.log('🚀 SEEDING COMPLETE! Login details:');
+    // ---------------------------------------------------------
+    // 3. CREATE SPRINTS & TASKS (The Heavy Lifting)
+    // ---------------------------------------------------------
+    console.log('🚀 Creating Sprints & Tasks...');
+    
+    let totalTasks = 0;
+    const taskPriorities = ['low', 'medium', 'high'];
+    const taskStatuses = ['todo', 'in-progress', 'review', 'done'];
+
+    for (const project of createdProjects) {
+        // Create 3-5 Sprints per project
+        const sprintCount = getRandomInt(3, 5);
+        const projectSprints = [];
+
+        for (let s = 1; s <= sprintCount; s++) {
+            const sprintStartDate = new Date(project.startDate);
+            sprintStartDate.setDate(sprintStartDate.getDate() + (s * 14)); // 2 weeks gap
+            const sprintEndDate = new Date(sprintStartDate);
+            sprintEndDate.setDate(sprintEndDate.getDate() + 14);
+
+            projectSprints.push({
+                title: `Sprint ${s}: Phase ${s}`,
+                goal: `Complete phase ${s} deliverables`,
+                sprintNumber: s,
+                startDate: sprintStartDate,
+                endDate: sprintEndDate,
+                status: s < sprintCount ? 'completed' : 'active', // Last one active, others done
+                project: project._id
+            });
+        }
+        
+        // FIX 2: Added 'as any' here to solve the TypeScript error
+        const createdSprints = await Sprint.create(projectSprints as any);
+
+        // Create Tasks for this project
+        const taskCount = getRandomInt(20, 40); // 20-40 tasks per project
+        const tasksData = [];
+
+        for (let t = 0; t < taskCount; t++) {
+            const assignees = [getRandomElement(createdUsers)._id];
+            if (Math.random() > 0.7) assignees.push(getRandomElement(createdUsers)._id); // 30% chance of multiple assignees
+
+            const status = getRandomElement(taskStatuses);
+            
+            // 80% tasks in sprints, 20% in backlog (undefined sprint)
+            const sprintId = Math.random() > 0.2 ? getRandomElement(createdSprints)._id : undefined;
+            
+            // Random Time Logs for Done tasks (to show in charts)
+            const timeLogs = [];
+            let actualHours = 0;
+            if (status === 'done' || status === 'in-progress') {
+                const logCount = getRandomInt(1, 3);
+                for (let l = 0; l < logCount; l++) {
+                    const h = getRandomInt(1, 5);
+                    timeLogs.push({
+                        user: assignees[0],
+                        hours: h,
+                        date: getRandomDate(new Date('2023-01-01'), new Date())
+                    });
+                    actualHours += h;
+                }
+            }
+
+            tasksData.push({
+                title: `${getRandomElement(taskVerbs)} ${getRandomElement(taskNouns)}`,
+                description: 'Generated task description for testing.',
+                project: project._id,
+                sprint: sprintId,
+                assignees,
+                priority: getRandomElement(taskPriorities),
+                status: status,
+                dueDate: getRandomDate(new Date(), new Date('2025-01-01')),
+                estimate: getRandomInt(4, 20),
+                actualHours,
+                timeLogs
+            });
+        }
+
+        // FIX 3: Added 'as any' here
+        await Task.create(tasksData as any);
+        totalTasks += tasksData.length;
+    }
+
+    console.log(`✅ ${createdProjects.length * 4} Sprints Created (Approx).`);
+    console.log(`✅ ${totalTasks} Tasks Created.`);
+    
+    console.log('\n🎉 SEEDING COMPLETE! Login details:');
     console.log('   Admin:   admin@datapolex.com / password123');
     console.log('   Manager: manager@datapolex.com / password123');
+    console.log('   Dev:     dev1@datapolex.com / password123');
     
     process.exit();
   } catch (error) {

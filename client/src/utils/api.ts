@@ -7,6 +7,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 10000, // 10s Timeout added
 });
 
 // Request Interceptor
@@ -21,23 +22,39 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response Interceptor (NEW: Handle 401)
+// Response Interceptor (Enhanced)
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 401) {
-      // টোকেন এক্সপায়ারড বা ইনভ্যালিড হলে
-      // লুপ আটকাতে চেক করুন আমরা ইতিমধ্যে লগইন পেজে আছি কিনা
+    const originalRequest = error.config;
+
+    // 1. Handle Network Errors (Server Down / No Internet)
+    if (!error.response) {
+      toast.error('Network error! Please check your connection.');
+      return Promise.reject(error);
+    }
+
+    // 2. Handle Session Expiry (401)
+    if (error.response.status === 401 && !originalRequest._retry) {
       if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
         Cookies.remove('token');
         localStorage.removeItem('user');
         
-        toast.error('Session expired. Please login again.');
-        setTimeout(() => {
-            window.location.href = '/login';
-        }, 1000);
+        // Prevent duplicate toasts
+        if (!document.querySelector('.toast-session-expired')) {
+            toast.error('Session expired. Please login again.', { className: 'toast-session-expired' });
+            setTimeout(() => {
+                window.location.href = '/login';
+            }, 1500);
+        }
       }
     }
+
+    // 3. Handle Server Errors (500)
+    if (error.response.status >= 500) {
+      toast.error('Server error! Please try again later.');
+    }
+
     return Promise.reject(error);
   }
 );

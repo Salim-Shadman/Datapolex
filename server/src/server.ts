@@ -16,43 +16,52 @@ import userRoutes from './routes/userRoutes';
 import uploadRoutes from './routes/uploadRoutes';
 import dashboardRoutes from './routes/dashboardRoutes';
 import { errorHandler } from './middleware/errorMiddleware';
-
-// স্যানিটাইজার ইম্পোর্ট (যদি ফাইলটি থাকে)
-// import { sanitizeData } from './middleware/sanitizeMiddleware'; 
+import { sanitizeData } from './middleware/sanitizeMiddleware'; 
 
 dotenv.config();
+
+// Production Safety Check
+if (!process.env.MONGO_URI || !process.env.JWT_SECRET) {
+  console.error('FATAL ERROR: MONGO_URI or JWT_SECRET is not defined in .env');
+  process.exit(1);
+}
+
 connectDB();
 
 const app = express();
 
-// 1. CORS FIX: এটিকে সবার প্রথমে রাখুন এবং 'origin: true' দিন
+// 1. Security & CORS
+app.use(helmet({ 
+  crossOriginResourcePolicy: false, // Allows loading resources like images from different origins
+}));
+
 app.use(cors({
-  origin: true, // অটোমেটিক রিকোয়েস্টের অরিজিন এক্সেপ্ট করবে
-  credentials: true, // কুকিজ এবং হেডার এলাউ করবে
+  origin: process.env.CLIENT_URL || 'http://localhost:3000', // Restrict to your frontend URL
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// 2. অন্যান্য মিডলওয়্যার
-app.use(compression());
-app.use(express.json());
-// app.use(sanitizeData); // যদি ফাইল থাকে তবেই এটি আনকমেন্ট করুন
-app.use(helmet({ crossOriginResourcePolicy: false })); // Helmet CORS পলিসি ডিজেবল করা হলো
-app.use(morgan('dev'));
+// 2. Middleware
+app.use(compression()); // Gzip compression
+app.use(express.json({ limit: '10kb' })); // Limit body size to prevent DoS
+app.use(sanitizeData); // Prevent NoSQL Injection
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
-// 3. Rate Limiting (একটু বাড়িয়ে দেওয়া হলো যাতে লগইনে সমস্যা না হয়)
+// 3. Rate Limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, 
-  max: 200, // 100 থেকে বাড়িয়ে 200 করা হলো
+  max: 200, 
   standardHeaders: true, 
   legacyHeaders: false,
+  message: 'Too many requests from this IP, please try again later.'
 });
-app.use(limiter);
+app.use('/api', limiter);
 
-// Auth Limiter (লগইন এরর কমানোর জন্য লিমিট বাড়ানো হলো)
+// Auth Specific Limiter (Stricter)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 50, // 20 থেকে বাড়িয়ে 50 করা হলো
+  max: 20, // Strict limit for login/register to prevent brute force
   message: 'Too many login attempts, please try again later'
 });
 app.use('/api/auth', authLimiter);
@@ -66,14 +75,18 @@ app.use('/api/users', userRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 
-app.get('/', (req, res) => { res.send('MPMS API is running fast & secure...'); });
+// Health Check
+app.get('/', (req, res) => { 
+  res.status(200).json({ status: 'active', message: 'MPMS API is running securely.' }); 
+});
 
+// Error Handling
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
 const server = app.listen(PORT, () => {
-  console.log(`🚀 Server running with CORS FIXED on port ${PORT}`);
+  console.log(`🚀 Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
 });
 
 // Graceful Shutdown
