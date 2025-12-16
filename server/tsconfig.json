@@ -30,5 +30,9 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules",
+    "../server",     // FIX: এটি পুরো সার্ভার ফোল্ডারকে এক্সক্লুড করবে
+    "../server/**"  // FIX: এটি সার্ভার ফোল্ডারের ভেতরের সব ফাইলকে এক্সক্লুড করবে
+  ]
 }
