@@ -1,7 +1,8 @@
 {
   "functions": {
-    "server/src/server.ts": {
-      "runtime": "@vercel/node@3.0.12",
+    
+    "server/api/index.ts": { 
+      "runtime": "@vercel/node@2.0.1",
       "memory": 1024,
       "maxDuration": 10
     }
@@ -9,7 +10,12 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "server/src/server.ts"
+      "destination": "server/api/index.ts" 
+    },
+    
+    {
+      "source": "/(.*)",
+      "destination": "/client/$1"
     }
   ]
 }
