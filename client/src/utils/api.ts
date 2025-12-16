@@ -2,8 +2,16 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
 
+// --- FIX START: API URL Robustness ---
+const baseApiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+
+// নিশ্চিত করা হচ্ছে যে BASE URL এর শেষে '/api' আছে।
+// এটি ক্লায়েন্টকে সঠিক Vercel Serverless Function রুটে রিকোয়েস্ট করতে সাহায্য করে।
+const finalApiUrl = baseApiUrl.endsWith('/api') ? baseApiUrl : `${baseApiUrl}/api`;
+
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  baseURL: finalApiUrl,
+// --- FIX END ---
   headers: {
     'Content-Type': 'application/json',
   },
