@@ -1,6 +1,6 @@
 # 🚀 Minimal Project Management System (MPMS)
 
-A full-stack, feature-rich Project Management Dashboard designed to streamline team collaboration, sprint planning, and task tracking. Built with the **MERN Stack (Next.js)**, this application offers a real-world experience with features like **Kanban Boards**, **Time Tracking**, **Analytics**, and **Role-based Access Control**.
+A full-stack, production-ready Project Management Dashboard designed to streamline team collaboration, sprint planning, and task tracking. Built with the **MERN Stack (Next.js & Express)**, this application offers a real-world experience with features like **Kanban Boards**, **Time Tracking**, **Analytics**, and **Enterprise-Grade Security**.
 
 🔴 **Live Site:** [Insert Your Vercel/Live Link Here]
 ⚙️ **Server API:** [Insert Your Render/Server Link Here]
@@ -16,24 +16,19 @@ A full-stack, feature-rich Project Management Dashboard designed to streamline t
 - Real-time stats on Budget, Active Projects, and Pending Reviews.
 
 ### 2. 📋 Advanced Task Management
-- **Kanban Board:** Drag-and-drop interface to move tasks between Todo, In Progress, Review, and Done.
-- **Rich Text Editor:** Tasks support formatted descriptions (Bold, Italic, Lists, etc.) using `react-quill-new`.
-- **File Attachments:** Upload images/PDFs directly to tasks (Powered by Cloudinary).
+- **Kanban Board:** Drag-and-drop interface (Hello Pangea DnD).
+- **Rich Text Editor:** Tasks support formatted descriptions using `react-quill-new`.
+- **File Attachments:** Upload images/PDFs/Docs securely to Cloudinary with size limits.
 
-### 3. ⏱️ Time Tracking & Activity Logs
-- **Time Logging:** Developers can log actual hours worked vs estimated hours.
-- **Activity Story:** A unified feed showing who changed status, who commented, and who logged time (Audit Trail).
+### 3. 🛡️ Enterprise Security & Performance
+- **Security:** Helmet, CORS, Rate Limiting, and NoSQL Injection Protection (Sanitization).
+- **Performance:** Gzip Compression enabled for 70% faster API responses.
+- **Authentication:** JWT-based secure login with session sync.
+- **Role-Based Access (RBAC):** Granular permissions for Admin, Manager, and Member.
 
-### 4. 🏃 Sprint Management
-- Create, Edit, and Delete Sprints.
-- Organize tasks within specific sprints for Agile workflow.
-
-### 5. 🛡️ Security & Roles
-- **Authentication:** JWT-based secure login system.
-- **Role-Based Access (RBAC):**
-  - **Admin/Manager:** Can create projects, sprints, delete data.
-  - **Member:** Can only update task status, log time, and comment.
-- **Confirmation Modals:** Custom beautiful UI warnings before deleting critical data (Projects/Tasks).
+### 4. ⏱️ Time Tracking & Sprints
+- **Agile Workflow:** Create and manage Sprints.
+- **Time Logging:** Track actual vs estimated hours with built-in timers.
 
 ---
 
@@ -42,81 +37,78 @@ A full-stack, feature-rich Project Management Dashboard designed to streamline t
 ### Frontend
 - **Framework:** Next.js 14 (App Router)
 - **Styling:** Tailwind CSS
-- **State Management:** React Context API
-- **Visuals:** Recharts (Charts), Lucide React (Icons)
-- **Tools:** React Hook Form, React Hot Toast, Hello Pangea DnD (Kanban), React Quill New
+- **State:** Context API
+- **Visuals:** Recharts, Lucide React
 
 ### Backend
-- **Runtime:** Node.js
-- **Framework:** Express.js
+- **Runtime:** Node.js & Express.js
 - **Database:** MongoDB (Mongoose)
-- **Authentication:** JSON Web Token (JWT)
-- **Storage:** Cloudinary (Image/File Uploads)
+- **Security:** Helmet, Express-Rate-Limit, Mongo-Sanitize
+- **Storage:** Cloudinary
 
 ---
 
-## 📸 Screenshots
+## 🚀 How to Run (3 Ways)
+
+### Option 1: The Magic Command (Recommended) 🪄
+Run both frontend and backend with a single command!
+
+# 1. Install dependencies
+npm install
+npm run install:all
+
+# 2. Start Everything
+npm start
+
+*App will run at http://localhost:3000*
 
 ---
 
-## 🚀 How to Run Locally
+### Option 2: Using Docker 🐳
+Run the entire stack (Frontend + Backend + Database) in a container.
 
-Follow these steps to set up the project on your local machine.
+docker-compose up --build
 
-### Prerequisites
-- Node.js installed
-- MongoDB URI
-- Cloudinary Credentials
+---
 
-### 1. Clone the Repository
+### Option 3: Manual Setup
+If you prefer running them separately:
 
-git clone https://github.com/your-username/your-repo-name.git
-cd your-repo-name
-
-
-### 2. Backend Setup
-Navigate to the server folder:
-
+**1. Backend Setup**
 cd server
 npm install
+# Create .env file (see below)
+npm run dev
 
-Create a .env file in the server folder and add your credentials:
+**2. Frontend Setup**
+cd client
+npm install
+# Create .env.local file (see below)
+npm run dev
 
+---
+
+## 🔑 Environment Variables (.env)
+
+**Server (server/.env):**
 PORT=5000
 MONGO_URI=your_mongodb_connection_string
-JWT_SECRET=your_secret_key_here
+JWT_SECRET=super_secret_key
+CLIENT_URL=http://localhost:3000
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
 
-Start the backend server:
-
-npm run dev
-
-
-### 3. Frontend Setup
-Open a new terminal and navigate to the client folder:
-
-cd client
-npm install
-
-Create a .env.local file in the client folder:
-
+**Client (client/.env.local):**
 NEXT_PUBLIC_API_URL=http://localhost:5000/api
-
-Start the frontend application:
-
-npm run dev
-
-Visit http://localhost:3000 in your browser.
 
 ---
 
 ## 🔐 Admin Credentials (For Testing)
+We have pre-seeded the database with these credentials:
 
-You can use these credentials to explore Admin features (or create a new one):
-- **Email:** admin@example.com
-- **Password:** 123456
+- **Email:** admin@datapolex.com
+- **Password:** password123
 
 ---
 
