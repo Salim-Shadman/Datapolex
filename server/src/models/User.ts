@@ -32,17 +32,17 @@ UserSchema.methods.matchPassword = async function (enteredPassword: string) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-// FIX: 'next' প্যারামিটার সরিয়ে pure async function ব্যবহার করা হয়েছে
+// FIX: 'next' প্যারামিটার রিমুভ করা হয়েছে টাইপস্ক্রিপ্ট এরর ফিক্স করার জন্য
 UserSchema.pre('save', async function (this: any) {
   if (!this.isModified('password')) {
-    return;
+    return; // next() কল করার দরকার নেই, শুধু রিটার্ন করলেই হবে
   }
 
   try {
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
   } catch (error) {
-    throw error; // Mongoose will handle this error
+    throw error; // next(error) এর বদলে সরাসরি throw করতে হবে
   }
 });
 

@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import Cookies from 'js-cookie';
 import { useRouter } from 'next/navigation';
+import api from '@/utils/api'; // Import API helper
 
 interface User {
   _id: string;
@@ -31,21 +32,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
+  // FIX: Verify session with server on mount instead of trusting localStorage blindly
   useEffect(() => {
-    const storedToken = Cookies.get('token');
-    const storedUser = localStorage.getItem('user');
+    const initAuth = async () => {
+      const storedToken = Cookies.get('token');
+      const storedUser = localStorage.getItem('user');
 
-    if (storedToken && storedUser) {
-      setToken(storedToken);
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (e) {
-        console.error("Failed to parse user data", e);
-        Cookies.remove('token');
+      if (storedToken) {
+        setToken(storedToken);
+        // Optimistically set user from storage first for speed
+        if (storedUser) {
+           setUser(JSON.parse(storedUser));
+        }
+
+        try {
+          // Verify with server to get fresh data (Role/Permissions updates)
+          const { data } = await api.get('/users/profile');
+          setUser(data);
+          localStorage.setItem('user', JSON.stringify(data));
+        } catch (error) {
+          console.error("Session invalid:", error);
+          // If 401, api interceptor handles it, but safety fallback here:
+          if (!storedUser) { // Only force logout if we didn't have a cached user
+             Cookies.remove('token');
+             localStorage.removeItem('user');
+          }
+        }
+      } else {
+        // Clear cleanup just in case
         localStorage.removeItem('user');
       }
-    }
-    setLoading(false);
+      setLoading(false);
+    };
+
+    initAuth();
   }, []);
 
   const login = (newToken: string, userData: User) => {

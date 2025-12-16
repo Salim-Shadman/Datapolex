@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, FolderKanban, Users, LogOut, Settings, Menu, X } from 'lucide-react';
+import { LayoutDashboard, FolderKanban, Users, LogOut, Settings, Menu, X, User as UserIcon } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useState } from 'react';
 import ProfileModal from './ProfileModal';
@@ -57,7 +58,7 @@ export default function Sidebar() {
             <Link
               key={item.name}
               href={item.href}
-              onClick={() => setIsMobileOpen(false)} // Close on click (mobile)
+              onClick={() => setIsMobileOpen(false)}
               className={`group flex items-center rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200 ${
                 isActive
                   ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/50'
@@ -84,7 +85,13 @@ export default function Sidebar() {
           {/* USER AVATAR DISPLAY */}
           <div className="relative mr-3 h-10 w-10 overflow-hidden rounded-full bg-indigo-500 border-2 border-slate-600 group-hover:border-indigo-400 transition flex-shrink-0">
             {user?.avatar ? (
-                <img src={user.avatar} alt={user.name} className="h-full w-full object-cover" />
+                <Image 
+                    src={user.avatar} 
+                    alt={user.name} 
+                    width={40} 
+                    height={40} 
+                    className="h-full w-full object-cover"
+                />
             ) : (
                 <span className="flex h-full w-full items-center justify-center font-bold text-white">
                     {user?.name?.charAt(0)}

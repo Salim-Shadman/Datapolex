@@ -48,7 +48,6 @@ export const getTasks = asyncHandler(async (req: Request, res: Response) => {
   if (projectId) query.project = projectId;
   if (sprintId) query.sprint = sprintId;
   
-  // FIX: Filters added
   if (status) query.status = status;
   if (priority) query.priority = priority;
   if (assignee) query.assignees = assignee;
@@ -58,7 +57,8 @@ export const getTasks = asyncHandler(async (req: Request, res: Response) => {
     .populate('sprint', 'title sprintNumber')
     .populate('comments.user', 'name avatar')
     .populate('timeLogs.user', 'name')
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .limit(500); // FIX: Safety limit for production to prevent memory overflow
 
   res.json(tasks);
 });
@@ -69,7 +69,7 @@ export const updateTask = asyncHandler(async (req: AuthRequest, res: Response) =
   const task = await Task.findById(req.params.id);
 
   if (task) {
-    // FIX: Security Check - Review to Done requires Manager/Admin
+    // Security Check: Review to Done requires Manager/Admin
     if (task.status === 'review' && req.body.status === 'done') {
         if (req.user.role !== 'admin' && req.user.role !== 'manager') {
             res.status(403);

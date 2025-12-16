@@ -7,8 +7,15 @@ interface AuthRequest extends Request {
   user?: any;
 }
 
-// @desc    Get all users with Full Stats
+// @desc    Get all users with Full Stats (Supports ?simple=true for dropdowns)
 export const getUsers = asyncHandler(async (req: Request, res: Response) => {
+  // OPTIMIZATION: If simple list is requested (for Dropdowns), skip heavy aggregation
+  if (req.query.simple === 'true') {
+      const users = await User.find({}).select('_id name email role avatar department').sort({ name: 1 }).lean();
+      return res.json(users); // Return early
+  }
+
+  // Heavy Stats Calculation for Team Page
   const users = await User.find({}).select('-password').sort({ createdAt: -1 }).lean();
 
   const [totalTaskCounts, completedTaskCounts, hourCounts] = await Promise.all([

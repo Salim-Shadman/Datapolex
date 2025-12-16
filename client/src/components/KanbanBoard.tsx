@@ -18,18 +18,12 @@ const columns = {
 };
 
 export default function KanbanBoard({ tasks, onStatusChange, onTaskClick }: KanbanBoardProps) {
-  const [enabled, setEnabled] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  // Fix hydration mismatch
   useEffect(() => {
-    const animation = requestAnimationFrame(() => setEnabled(true));
-    return () => {
-      cancelAnimationFrame(animation);
-      setEnabled(false);
-    };
+    setMounted(true);
   }, []);
 
-  // OPTIMIZATION: Memoize filtered tasks to prevent re-calculation on every render
   const tasksByStatus = useMemo(() => {
     return {
       todo: tasks.filter(t => t.status === 'todo'),
@@ -51,8 +45,15 @@ export default function KanbanBoard({ tasks, onStatusChange, onTaskClick }: Kanb
     }
   };
 
-  if (!enabled) {
-    return <div className="p-4 text-center text-gray-500">Loading Board...</div>;
+  if (!mounted) {
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 h-full min-h-[600px] p-4">
+             {/* Skeleton Loading */}
+             {[1, 2, 3, 4].map(i => (
+                 <div key={i} className="flex flex-col p-4 rounded-xl border border-gray-100 bg-gray-50 h-96 animate-pulse"></div>
+             ))}
+        </div>
+    );
   }
 
   return (
@@ -95,10 +96,14 @@ export default function KanbanBoard({ tasks, onStatusChange, onTaskClick }: Kanb
                                     
                                     <div className="flex items-center justify-between pt-3 border-t border-gray-50 mt-2">
                                         <div className="flex items-center text-xs text-gray-500">
-                                            <div className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold mr-2 text-[10px]">
-                                                {task.assignees?.[0]?.name?.charAt(0) || <User size={10}/>}
+                                            <div className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold mr-2 text-[10px] overflow-hidden">
+                                                {task.assignees?.[0]?.avatar ? (
+                                                    <img src={task.assignees[0].avatar} alt="" className="w-full h-full object-cover"/>
+                                                ) : (
+                                                    task.assignees?.[0]?.name?.charAt(0) || <User size={10}/>
+                                                )}
                                             </div>
-                                            {task.assignees?.[0]?.name?.split(' ')[0]}
+                                            {task.assignees?.[0]?.name?.split(' ')[0] || 'Unassigned'}
                                         </div>
                                         {task.subtasks?.length > 0 && (
                                             <div className="flex items-center text-xs text-gray-400" title="Subtasks">

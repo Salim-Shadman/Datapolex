@@ -14,10 +14,21 @@ cloudinary.config({
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: 'mpms_uploads', // Cloudinary folder name
-    allowed_formats: ['jpg', 'png', 'jpeg', 'pdf'], // Supported formats
+    folder: 'mpms_uploads', 
+    allowed_formats: ['jpg', 'png', 'jpeg', 'pdf', 'docx'], // FIX: Restricted formats
     resource_type: 'auto',
   } as any,
 });
 
-export const upload = multer({ storage: storage });
+// FIX: Added File Filter & Size Limit (Max 5MB)
+export const upload = multer({ 
+    storage: storage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB Limit
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf' || file.mimetype.includes('word')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only images, PDFs and Word docs are allowed!'));
+        }
+    }
+});

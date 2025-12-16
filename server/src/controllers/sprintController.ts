@@ -4,7 +4,6 @@ import Task from '../models/Task';
 import asyncHandler from '../middleware/asyncHandler';
 
 // @desc    Get all sprints (Filter by Project ID)
-// @route   GET /api/sprints
 export const getSprints = asyncHandler(async (req: Request, res: Response) => {
   const { projectId } = req.query;
 
@@ -21,14 +20,14 @@ export const getSprints = asyncHandler(async (req: Request, res: Response) => {
 });
 
 // @desc    Create a sprint (Auto-Increment Logic Added)
-// @route   POST /api/sprints
 export const createSprint = asyncHandler(async (req: Request, res: Response) => {
   const { title, goal, startDate, endDate, project } = req.body;
 
   // FIX: Auto-increment Sprint Number
   // Find the latest sprint for this project
   const lastSprint = await Sprint.findOne({ project } as any).sort({ sprintNumber: -1 });
-  const sprintNumber = lastSprint ? lastSprint.sprintNumber + 1 : 1;
+  // If lastSprint exists, increment. Else start at 1.
+  const sprintNumber = lastSprint ? (lastSprint.sprintNumber || 0) + 1 : 1;
 
   const sprint = await Sprint.create({
     title,
@@ -44,7 +43,6 @@ export const createSprint = asyncHandler(async (req: Request, res: Response) => 
 });
 
 // @desc    Update sprint
-// @route   PUT /api/sprints/:id
 export const updateSprint = asyncHandler(async (req: Request, res: Response) => {
   const sprint = await Sprint.findById(req.params.id);
 
@@ -65,7 +63,6 @@ export const updateSprint = asyncHandler(async (req: Request, res: Response) => 
 });
 
 // @desc    Delete sprint
-// @route   DELETE /api/sprints/:id
 export const deleteSprint = asyncHandler(async (req: Request, res: Response) => {
   const sprint = await Sprint.findById(req.params.id);
 

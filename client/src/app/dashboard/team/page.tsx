@@ -1,13 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import api from '@/utils/api';
 import { Users, Mail, Plus, CheckCircle, Clock, Trash2, Edit2, Shield, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/context/AuthContext';
 import AddUserModal from '@/components/AddUserModal';
-import UserEditModal from '@/components/UserEditModal'; // Import Edit Modal
-import ConfirmModal from '@/components/ConfirmModal'; // Import Confirm Modal
+import UserEditModal from '@/components/UserEditModal'; 
+import ConfirmModal from '@/components/ConfirmModal'; 
 
 interface User {
   _id: string;
@@ -50,16 +51,6 @@ export default function TeamPage() {
   const handleDelete = async () => {
     if (!deleteUserId) return;
     try {
-        // Assuming there's a delete route. If not, you might need to add it to backend or soft delete.
-        // For now, let's assume standard REST: DELETE /users/:id
-        // Note: You might need to add this route to userController/routes if missing.
-        // If strict requirement doesn't ask for delete, you can skip, but "Management" implies it.
-        // Since backend might not have DELETE /users/:id, check your routes. 
-        // If not, we can hide the delete button or add the route.
-        // *Assuming secure delete logic exists or skip if risky.*
-        // Let's implement a soft-delete or just UI removal for now if API missing.
-        
-        // Actually, let's add the API call assuming standard CRUD.
         await api.delete(`/users/${deleteUserId}`); 
         toast.success('Member removed');
         setUsers(users.filter(u => u._id !== deleteUserId));
@@ -104,7 +95,14 @@ export default function TeamPage() {
             <div key={member._id} className="bg-white rounded-xl border border-gray-100 p-5 flex flex-col md:flex-row items-center gap-6 shadow-sm hover:shadow-md transition-all group">
                 <div className="flex-shrink-0">
                     {member.avatar ? (
-                         <img src={member.avatar} alt={member.name} className="h-14 w-14 rounded-full object-cover border-2 border-indigo-50" />
+                         <div className="h-14 w-14 rounded-full overflow-hidden border-2 border-indigo-50 relative">
+                             <Image 
+                                src={member.avatar} 
+                                alt={member.name} 
+                                fill
+                                className="object-cover"
+                             />
+                         </div>
                     ) : (
                         <div className="h-14 w-14 rounded-full bg-indigo-50 flex items-center justify-center text-xl font-bold text-indigo-600 uppercase border-2 border-white shadow-sm">
                             {member.name.charAt(0)}

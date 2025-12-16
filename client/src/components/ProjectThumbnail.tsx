@@ -1,13 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { Image as ImageIcon } from 'lucide-react';
 
 interface ProjectThumbnailProps {
   src?: string | null;
   alt: string;
   className?: string;
-  children?: React.ReactNode; // For overlays like Delete button or Status badge
+  children?: React.ReactNode; 
 }
 
 export default function ProjectThumbnail({ src, alt, className, children }: ProjectThumbnailProps) {
@@ -20,10 +21,12 @@ export default function ProjectThumbnail({ src, alt, className, children }: Proj
           <ImageIcon className="text-gray-300 w-8 h-8 opacity-50" />
         </div>
       ) : (
-        <img 
+        <Image 
           src={src} 
           alt={alt} 
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          fill
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          className="object-cover transition-transform duration-500 group-hover:scale-105"
           onError={() => setImageError(true)}
         />
       )}

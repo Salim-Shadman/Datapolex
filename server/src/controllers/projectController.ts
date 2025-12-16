@@ -12,7 +12,7 @@ export const createProject = asyncHandler(async (req: Request, res: Response) =>
   res.status(201).json(project);
 });
 
-// @desc    Get all projects with Pagination & Stats
+// @desc    Get all projects with Pagination & Stats (Optimized)
 // @route   GET /api/projects
 export const getProjects = asyncHandler(async (req: Request, res: Response) => {
   const { status, client, page, limit } = req.query;
@@ -29,7 +29,15 @@ export const getProjects = asyncHandler(async (req: Request, res: Response) => {
   const skip = (pageNum - 1) * limitNum;
 
   const projects = await Project.aggregate([
+    // 1. Filter first
     { $match: matchStage },
+    
+    // 2. Sort & Paginate EARLY (Huge Performance Boost)
+    { $sort: { createdAt: -1 } },
+    { $skip: skip },
+    { $limit: limitNum },
+
+    // 3. Lookup Tasks ONLY for the paginated results
     {
       $lookup: {
         from: 'tasks',
@@ -88,10 +96,7 @@ export const getProjects = asyncHandler(async (req: Request, res: Response) => {
     },
     {
       $project: { tasks: 0 },
-    },
-    { $sort: { createdAt: -1 } },
-    { $skip: skip },
-    { $limit: limitNum }
+    }
   ]);
 
   res.json(projects);
@@ -114,7 +119,6 @@ export const getProjectById = asyncHandler(async (req: Request, res: Response) =
 export const updateProject = asyncHandler(async (req: Request, res: Response) => {
   const project = await Project.findById(req.params.id);
   if (project) {
-    // FIX: Added { runValidators: true }
     const updatedProject = await Project.findByIdAndUpdate(req.params.id, req.body, { 
       new: true,
       runValidators: true 

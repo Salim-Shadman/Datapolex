@@ -26,12 +26,12 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      // টোকেন এক্সপায়ারড বা ইনভ্যালিড
-      Cookies.remove('token');
-      localStorage.removeItem('user');
-      
-      // উইন্ডো রিফ্রেশ বা রিডাইরেক্ট (যাতে ইউজার লগইন পেজে যায়)
+      // টোকেন এক্সপায়ারড বা ইনভ্যালিড হলে
+      // লুপ আটকাতে চেক করুন আমরা ইতিমধ্যে লগইন পেজে আছি কিনা
       if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+        Cookies.remove('token');
+        localStorage.removeItem('user');
+        
         toast.error('Session expired. Please login again.');
         setTimeout(() => {
             window.location.href = '/login';

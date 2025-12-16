@@ -29,14 +29,16 @@ app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:3000' }));
 app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 app.use(morgan('dev'));
 
+// 2. RATE LIMITING: Prevent Brute Force Attacks
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100, 
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
   standardHeaders: true, 
   legacyHeaders: false,
 });
 app.use(limiter);
 
+// Stricter limit for auth routes
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20, 

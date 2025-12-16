@@ -29,7 +29,7 @@ export const getDashboardStats = asyncHandler(async (req: AuthRequest, res: Resp
   const totalBudget = budgetStats[0]?.total || 0;
   const totalHours = hoursStats[0]?.total || 0;
 
-  // Format chart data
+  // Format chart data for Recharts
   const chartData = [
     { name: 'To Do', value: taskDistribution.find(t => t._id === 'todo')?.count || 0, color: '#94a3b8' },
     { name: 'In Progress', value: taskDistribution.find(t => t._id === 'in-progress')?.count || 0, color: '#3b82f6' },

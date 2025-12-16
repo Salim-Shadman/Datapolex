@@ -12,6 +12,7 @@ import Link from 'next/link';
 import SprintList from '@/components/SprintList';
 import TaskBoard from '@/components/TaskBoard';
 import EditProjectModal from '@/components/EditProjectModal';
+import ConfirmModal from '@/components/ConfirmModal'; // FIX: Imported ConfirmModal
 
 export default function ProjectDetailsPage() {
   const { id } = useParams();
@@ -22,6 +23,9 @@ export default function ProjectDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'board' | 'sprints'>('board');
   const [isEditOpen, setIsEditOpen] = useState(false);
+  
+  // FIX: State for Confirm Modal
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const fetchProject = async () => {
     try {
@@ -39,8 +43,8 @@ export default function ProjectDetailsPage() {
     if (id) fetchProject();
   }, [id]);
 
+  // FIX: Using Confirm Modal instead of window.confirm
   const handleDelete = async () => {
-    if (!window.confirm('Are you sure? This will delete all sprints and tasks!')) return;
     try {
       await api.delete(`/projects/${id}`);
       toast.success('Project deleted');
@@ -112,7 +116,7 @@ export default function ProjectDetailsPage() {
                  
                  {isAdminOrManager && (
                     <button 
-                        onClick={handleDelete}
+                        onClick={() => setConfirmOpen(true)}
                         className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
                         title="Delete Project"
                     >
@@ -157,6 +161,15 @@ export default function ProjectDetailsPage() {
             onUpdate={handleProjectUpdate}
         />
       )}
+
+      {/* FIX: Confirm Modal */}
+      <ConfirmModal 
+        isOpen={confirmOpen} 
+        onClose={() => setConfirmOpen(false)} 
+        onConfirm={handleDelete} 
+        title="Delete Project?" 
+        message="Are you sure you want to delete this project? All tasks and sprints will be permanently deleted." 
+      />
     </div>
   );
 }
