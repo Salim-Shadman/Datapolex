@@ -23,32 +23,49 @@ dotenv.config();
 // Production Safety Check
 if (!process.env.MONGO_URI || !process.env.JWT_SECRET) {
   console.error('FATAL ERROR: MONGO_URI or JWT_SECRET is not defined in .env');
-  process.exit(1);
+  // Vercel এ process.exit() করলে বিল্ড ফেইল করতে পারে, তাই শুধু এরর লগ রাখা হলো
 }
 
+// Connect to Database
 connectDB();
 
 const app = express();
 
 // 1. Security & CORS
 app.use(helmet({ 
-  crossOriginResourcePolicy: false, // Allows loading resources like images from different origins
+  crossOriginResourcePolicy: false, 
 }));
 
+// CORS Configuration Update for Vercel
+// Vercel এ ফ্রন্টএন্ড এবং ব্যাকএন্ড আলাদা ডোমেইনে থাকে, তাই এটি জরুরি
+const allowedOrigins = [
+  'http://localhost:3000', 
+  process.env.CLIENT_URL,
+  // আপনার Vercel ফ্রন্টএন্ড ডোমেইনগুলো এখানে ম্যানুয়ালিও দিতে পারেন যদি env কাজ না করে
+  'https://mpms-client.vercel.app', 
+  'https://datapolex.vercel.app' 
+].filter(Boolean);
+
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000', // Restrict to your frontend URL
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // 2. Middleware
-app.use(compression()); // Gzip compression
-app.use(express.json({ limit: '10kb' })); // Limit body size to prevent DoS
-app.use(sanitizeData); // Prevent NoSQL Injection
+app.use(compression());
+app.use(express.json({ limit: '10kb' }));
+app.use(sanitizeData);
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
-// 3. Rate Limiting
+// 3. Rate Limiting (Vercel Serverless এ মেমোরি স্টোর রিসেট হতে পারে, তবে বেসিক প্রোটেকশন হিসেবে রাখা হলো)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, 
   max: 200, 
@@ -58,10 +75,9 @@ const limiter = rateLimit({
 });
 app.use('/api', limiter);
 
-// Auth Specific Limiter (Stricter)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 20, // Strict limit for login/register to prevent brute force
+  max: 20, 
   message: 'Too many login attempts, please try again later'
 });
 app.use('/api/auth', authLimiter);
@@ -75,9 +91,13 @@ app.use('/api/users', userRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 
-// Health Check
+// Health Check Route
 app.get('/', (req, res) => { 
-  res.status(200).json({ status: 'active', message: 'MPMS API is running securely.' }); 
+  res.status(200).json({ 
+    status: 'active', 
+    message: 'MPMS API is running securely on Vercel.',
+    timestamp: new Date().toISOString()
+  }); 
 });
 
 // Error Handling
@@ -85,21 +105,32 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-const server = app.listen(PORT, () => {
-  console.log(`🚀 Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-});
+// ==========================================
+// VERCEL DEPLOYMENT FIX (CRITICAL STEP)
+// ==========================================
+// Vercel সার্ভারলেস এনভায়রনমেন্টে আমরা সরাসরি app.listen কল করি না।
+// এটি শুধুমাত্র লোকাল ডেভেলপমেন্টের জন্য রান হবে।
 
-// Graceful Shutdown
-const gracefulShutdown = () => {
-  console.log('🔄 Received kill signal, shutting down gracefully...');
-  server.close(() => {
-    console.log('🛑 Closed out remaining connections.');
-    mongoose.connection.close(false).then(() => {
-        console.log('🍃 MongoDB connection closed.');
-        process.exit(0);
-    });
+if (process.env.NODE_ENV !== 'production') {
+  const server = app.listen(PORT, () => {
+    console.log(`🚀 Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
   });
-};
 
-process.on('SIGTERM', gracefulShutdown);
-process.on('SIGINT', gracefulShutdown);
+  // Graceful Shutdown (Only for Local)
+  const gracefulShutdown = () => {
+    console.log('🔄 Received kill signal, shutting down gracefully...');
+    server.close(() => {
+      console.log('🛑 Closed out remaining connections.');
+      mongoose.connection.close(false).then(() => {
+          console.log('🍃 MongoDB connection closed.');
+          process.exit(0);
+      });
+    });
+  };
+
+  process.on('SIGTERM', gracefulShutdown);
+  process.on('SIGINT', gracefulShutdown);
+}
+
+// Vercel এর জন্য app কে এক্সপোর্ট করা আবশ্যক
+export default app;
