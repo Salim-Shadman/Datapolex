@@ -29,6 +29,11 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts"
-, "../server/src/seeder.ts"  ],
-  "exclude": ["node_modules"]
+    // FIX: ভুল সেটিং "../server/src/seeder.ts" এখান থেকে বাদ দেওয়া হলো
+  ],
+  "exclude": [
+    "node_modules",
+    "../server",     // FIX: পুরো সার্ভার ফোল্ডার এক্সক্লুড করা হলো
+    "../server/**"  // FIX: সার্ভারের ভেতরের সব ফাইল এক্সক্লুড করা হলো
+  ]
 }
