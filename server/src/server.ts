@@ -20,10 +20,9 @@ import { sanitizeData } from './middleware/sanitizeMiddleware';
 
 dotenv.config();
 
-// Production Safety Check
+// FIX: Production Safety Check এ process.exit() রিমুভ করা হলো
 if (!process.env.MONGO_URI || !process.env.JWT_SECRET) {
-  console.error('FATAL ERROR: MONGO_URI or JWT_SECRET is not defined in .env');
-  // Vercel এ process.exit() করলে বিল্ড ফেইল করতে পারে, তাই শুধু এরর লগ রাখা হলো
+  console.error('FATAL ERROR: MONGO_URI or JWT_SECRET is not defined in .env (Check Vercel ENV)');
 }
 
 // Connect to Database
@@ -37,13 +36,10 @@ app.use(helmet({
 }));
 
 // CORS Configuration Update for Vercel
-// Vercel এ ফ্রন্টএন্ড এবং ব্যাকএন্ড আলাদা ডোমেইনে থাকে, তাই এটি জরুরি
 const allowedOrigins = [
   'http://localhost:3000', 
   process.env.CLIENT_URL,
-  // আপনার Vercel ফ্রন্টএন্ড ডোমেইনগুলো এখানে ম্যানুয়ালিও দিতে পারেন যদি env কাজ না করে
-  'https://mpms-client.vercel.app', 
-  'https://datapolex.vercel.app' 
+  'https://datapolex.vercel.app', 
 ].filter(Boolean);
 
 app.use(cors({
@@ -65,7 +61,7 @@ app.use(express.json({ limit: '10kb' }));
 app.use(sanitizeData);
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
-// 3. Rate Limiting (Vercel Serverless এ মেমোরি স্টোর রিসেট হতে পারে, তবে বেসিক প্রোটেকশন হিসেবে রাখা হলো)
+// 3. Rate Limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, 
   max: 200, 
@@ -93,6 +89,7 @@ app.use('/api/dashboard', dashboardRoutes);
 
 // Health Check Route
 app.get('/', (req, res) => { 
+  // Vercel ফাংশন লোড হয়েছে কিনা চেক করার জন্য
   res.status(200).json({ 
     status: 'active', 
     message: 'MPMS API is running securely on Vercel.',
@@ -108,22 +105,20 @@ const PORT = process.env.PORT || 5000;
 // ==========================================
 // VERCEL DEPLOYMENT FIX (CRITICAL STEP)
 // ==========================================
-// Vercel সার্ভারলেস এনভায়রনমেন্টে আমরা সরাসরি app.listen কল করি না।
-// এটি শুধুমাত্র লোকাল ডেভেলপমেন্টের জন্য রান হবে।
-
+// Production এ app.listen কল হবে না।
 if (process.env.NODE_ENV !== 'production') {
   const server = app.listen(PORT, () => {
     console.log(`🚀 Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
   });
 
-  // Graceful Shutdown (Only for Local)
+  // Graceful Shutdown (Local-এ রাখা হলো, তবে production-এর জন্য process.exit() এড়ানো হয়েছে)
   const gracefulShutdown = () => {
     console.log('🔄 Received kill signal, shutting down gracefully...');
     server.close(() => {
       console.log('🛑 Closed out remaining connections.');
       mongoose.connection.close(false).then(() => {
           console.log('🍃 MongoDB connection closed.');
-          process.exit(0);
+          // FIX: LOCAL process.exit(0) রিমুভ করা হলো বা এড়িয়ে যাওয়া হলো
       });
     });
   };

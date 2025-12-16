@@ -1,20 +1,18 @@
 {
   "compilerOptions": {
     "target": "ES2020", 
-    "module": "commonjs", // Node.js মডিউল সিস্টেম
-    "rootDir": "./src", // সোর্স কোড ফোল্ডার
-    "outDir": "./dist", // কম্পাইল্ড জাভাস্ক্রিপ্ট আউটপুট ফোল্ডার
+    "module": "commonjs", 
+    "rootDir": "./src", 
+    "outDir": "./dist", 
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    // এটি মনোরেপোতে কাজ করার জন্য গুরুত্বপূর্ণ:
-    "typeRoots": ["./node_modules/@types", "../node_modules/@types"],
-    "sourceMap": true // সোর্স ম্যাপ দরকার
+    "sourceMap": true,
+    // Monorepo এর জন্য দরকারি টাইপ রুট
+    "typeRoots": ["./node_modules/@types", "../node_modules/@types"] 
   },
-  // src ফোল্ডারের ভেতরের সমস্ত .ts ফাইল অন্তর্ভুক্ত করা হলো
   "include": ["src/**/*.ts"], 
-  // node_modules এবং dist ফোল্ডার বাদ দেওয়া হলো
   "exclude": ["node_modules", "dist"]
 }
