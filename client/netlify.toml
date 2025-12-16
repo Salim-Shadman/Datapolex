@@ -1,0 +1,9 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+  # Next.js Build Plugin ব্যবহার করলে এই কনফিগারেশন যথেষ্ট
+
+[context.production.environment]
+  # প্রোডাকশন এনভায়রনমেন্ট ভেরিয়েবল
+  # তোমার লাইভ ব্যাকএন্ড URL এখানে যোগ করো (যদি ড্যাশবোর্ডে না করো)
+  # NEXT_PUBLIC_API_URL = "https://your-live-backend-url.com/api"
