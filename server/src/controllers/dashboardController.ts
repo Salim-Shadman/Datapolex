@@ -8,8 +8,7 @@ interface AuthRequest extends Request {
   user?: any;
 }
 
-// @desc    Get dashboard stats
-// @route   GET /api/dashboard/stats
+
 export const getDashboardStats = asyncHandler(async (req: AuthRequest, res: Response) => {
   const userId = req.user._id;
   const userRole = req.user.role;
@@ -20,7 +19,7 @@ export const getDashboardStats = asyncHandler(async (req: AuthRequest, res: Resp
     User.countDocuments(),
     Project.aggregate([{ $group: { _id: null, total: { $sum: '$budget' } } }]),
     Task.aggregate([{ $unwind: '$timeLogs' }, { $group: { _id: null, total: { $sum: '$timeLogs.hours' } } }]),
-    // New: Task Distribution for Charts
+    
     Task.aggregate([
         { $group: { _id: '$status', count: { $sum: 1 } } }
     ])
@@ -29,7 +28,7 @@ export const getDashboardStats = asyncHandler(async (req: AuthRequest, res: Resp
   const totalBudget = budgetStats[0]?.total || 0;
   const totalHours = hoursStats[0]?.total || 0;
 
-  // Format chart data for Recharts
+  
   const chartData = [
     { name: 'To Do', value: taskDistribution.find(t => t._id === 'todo')?.count || 0, color: '#94a3b8' },
     { name: 'In Progress', value: taskDistribution.find(t => t._id === 'in-progress')?.count || 0, color: '#3b82f6' },
@@ -104,7 +103,7 @@ export const getDashboardStats = asyncHandler(async (req: AuthRequest, res: Resp
     totalHours,
     totalUsers,
     recentProjects,
-    chartData, // Sent to frontend
+    chartData, 
     myStats
   });
 });

@@ -3,12 +3,12 @@ import React from 'react';
 interface ProgressBarProps {
   total: number;
   completed: number;
-  progress?: number; // New optional prop for weighted progress
+  progress?: number; 
   className?: string;
 }
 
 const ProgressBar: React.FC<ProgressBarProps> = ({ total, completed, progress, className }) => {
-  // Use provided weighted progress, otherwise fallback to simple calculation
+ 
   let percentage = 0;
   
   if (typeof progress === 'number') {
@@ -34,7 +34,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ total, completed, progress, c
         ></div>
       </div>
       <div className="text-xs text-gray-500 mt-1">
-        {/* Text remains strict: only Done / Total */}
+        
         {completed}/{total} tasks fully completed
       </div>
     </div>

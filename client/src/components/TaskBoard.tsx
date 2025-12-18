@@ -17,28 +17,28 @@ export default function TaskBoard({ projectId }: { projectId: string }) {
   const [sprints, setSprints] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   
-  // View & Filter State
+ 
   const [viewMode, setViewMode] = useState<'board' | 'list'>('board');
   const [filterSprint, setFilterSprint] = useState('');
   const [filterAssignee, setFilterAssignee] = useState('');
   const [filterPriority, setFilterPriority] = useState('');
 
-  // Modals
+  
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<any>(null);
 
-  // FIX: AbortController Ref for Race Conditions
+ 
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Fetch Filters (Sprints & Users)
+  
   useEffect(() => {
     let isMounted = true;
     const fetchFilters = async () => {
         try {
             const [sprintRes, userRes] = await Promise.all([
                 api.get(`/sprints?projectId=${projectId}`),
-                // Optimization: Fetch simplified user list
+                
                 api.get('/users?simple=true') 
             ]);
             if (isMounted) {
@@ -52,12 +52,12 @@ export default function TaskBoard({ projectId }: { projectId: string }) {
   }, [projectId]);
 
   const fetchTasks = useCallback(async () => {
-    // 1. Cancel previous pending request
+    
     if (abortControllerRef.current) {
         abortControllerRef.current.abort();
     }
     
-    // 2. Create new controller
+    
     const controller = new AbortController();
     abortControllerRef.current = controller;
 
@@ -68,8 +68,7 @@ export default function TaskBoard({ projectId }: { projectId: string }) {
       if (filterAssignee) filters.assignee = filterAssignee;
       if (filterPriority) filters.priority = filterPriority;
 
-      // Note: Typically pass controller.signal to api calls, 
-      // but here we check aborted status before setting state
+    
       const data = await taskService.getAll(filters);
       
       if (!controller.signal.aborted) {
@@ -90,7 +89,7 @@ export default function TaskBoard({ projectId }: { projectId: string }) {
   useEffect(() => {
     fetchTasks();
     return () => {
-        // Cleanup on unmount
+        
         if (abortControllerRef.current) {
             abortControllerRef.current.abort();
         }
@@ -98,7 +97,7 @@ export default function TaskBoard({ projectId }: { projectId: string }) {
   }, [fetchTasks]);
 
   const handleStatusChange = async (taskId: string, newStatus: string) => {
-    // Optimistic UI Update
+    
     const previousTasks = [...tasks];
     const updatedTasks = tasks.map(t => 
         t._id === taskId ? { ...t, status: newStatus } : t
@@ -109,7 +108,7 @@ export default function TaskBoard({ projectId }: { projectId: string }) {
         await taskService.update(taskId, { status: newStatus });
     } catch (error) {
         toast.error('Failed to update status');
-        setTasks(previousTasks); // Revert on error
+        setTasks(previousTasks); 
     }
   };
 
@@ -122,10 +121,10 @@ export default function TaskBoard({ projectId }: { projectId: string }) {
 
   return (
     <div className="h-full flex flex-col">
-      {/* Header & Filters */}
+      
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         
-        {/* View Toggles & Title */}
+        
         <div className="flex items-center gap-4">
             <h3 className="text-lg font-bold text-gray-800">Task Board</h3>
             <div className="bg-gray-100 p-1 rounded-lg flex text-gray-500">
@@ -146,7 +145,7 @@ export default function TaskBoard({ projectId }: { projectId: string }) {
             </div>
         </div>
 
-        {/* Filters & Actions */}
+       
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
             <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-2 py-1.5 shadow-sm">
                 <Filter size={14} className="text-gray-400"/>
@@ -196,7 +195,7 @@ export default function TaskBoard({ projectId }: { projectId: string }) {
         </div>
       </div>
 
-      {/* Content Area */}
+      
       <div className="flex-1 overflow-hidden">
          {loading ? (
              <div className="h-full flex items-center justify-center text-gray-500">Loading...</div>

@@ -1,6 +1,6 @@
 import express from 'express';
 import { 
-    getSprints, // FIX: getSprintsByProject এর বদলে getSprints
+    getSprints, 
     createSprint, 
     updateSprint, 
     deleteSprint 

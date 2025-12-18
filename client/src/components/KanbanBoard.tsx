@@ -37,7 +37,7 @@ export default function KanbanBoard({ tasks, onStatusChange, onTaskClick }: Kanb
     if (!result.destination) return;
     const { draggableId, destination, source } = result;
     
-    // If dropped in same column/position, do nothing
+    
     if (source.droppableId === destination.droppableId && source.index === destination.index) return;
 
     if (source.droppableId !== destination.droppableId) {
@@ -48,7 +48,7 @@ export default function KanbanBoard({ tasks, onStatusChange, onTaskClick }: Kanb
   if (!mounted) {
     return (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 h-full min-h-[600px] p-4">
-             {/* Skeleton Loading */}
+            
              {[1, 2, 3, 4].map(i => (
                  <div key={i} className="flex flex-col p-4 rounded-xl border border-gray-100 bg-gray-50 h-96 animate-pulse"></div>
              ))}

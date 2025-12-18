@@ -13,7 +13,7 @@ interface ProfileModalProps {
 }
 
 export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
-  const { user, updateUser } = useAuth(); // login এর বদলে updateUser নিন
+  const { user, updateUser } = useAuth(); 
   
   const { register, handleSubmit } = useForm({
     defaultValues: {
@@ -57,8 +57,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
         avatar: avatarUrl
       });
 
-      // FIX: login() এর বদলে updateUser() ব্যবহার করুন
-      // এটি লগআউট না করেই স্টেট আপডেট করবে
+      
       updateUser(res.data);
       
       toast.success('Profile Updated!');

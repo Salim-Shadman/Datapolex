@@ -1,4 +1,4 @@
-'use client'; // Must be use client
+'use client'; 
 
 import { useEffect } from 'react';
 import { AlertTriangle, RefreshCcw } from 'lucide-react';

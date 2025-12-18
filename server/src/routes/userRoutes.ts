@@ -15,7 +15,7 @@ router.route('/')
     .get(protect, getUsers)
     .post(protect, admin, createUser);
 
-// FIX: Delete & Update Route added
+
 router.route('/:id')
     .delete(protect, admin, deleteUser)
     .put(protect, admin, updateUser);

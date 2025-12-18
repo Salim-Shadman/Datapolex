@@ -15,15 +15,15 @@ const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: 'mpms_uploads', 
-    allowed_formats: ['jpg', 'png', 'jpeg', 'pdf', 'docx'], // FIX: Restricted formats
+    allowed_formats: ['jpg', 'png', 'jpeg', 'pdf', 'docx'], 
     resource_type: 'auto',
   } as any,
 });
 
-// FIX: Added File Filter & Size Limit (Max 5MB)
+
 export const upload = multer({ 
     storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB Limit
+    limits: { fileSize: 5 * 1024 * 1024 }, 
     fileFilter: (req, file, cb) => {
         if (file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf' || file.mimetype.includes('word')) {
             cb(null, true);

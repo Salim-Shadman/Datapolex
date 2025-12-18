@@ -7,10 +7,9 @@ interface AuthRequest extends Request {
   user?: any;
 }
 
-// @desc    Get all users with Full Stats & Pagination
-// @route   GET /api/users
+
 export const getUsers = asyncHandler(async (req: Request, res: Response) => {
-  // 1. Simple List for Dropdowns (Lightweight Query)
+  
   if (req.query.simple === 'true') {
       const users = await User.find({})
         .select('_id name email role avatar department')
@@ -19,12 +18,12 @@ export const getUsers = asyncHandler(async (req: Request, res: Response) => {
       return res.json(users);
   }
 
-  // 2. Pagination Logic
+ 
   const page = Number(req.query.page) || 1;
-  const limit = Number(req.query.limit) || 20; // Default 20 users per page
+  const limit = Number(req.query.limit) || 20; 
   const skip = (page - 1) * limit;
 
-  // 3. Fetch Users
+  
   const totalUsers = await User.countDocuments({});
   const users = await User.find({})
     .select('-password')
@@ -33,7 +32,7 @@ export const getUsers = asyncHandler(async (req: Request, res: Response) => {
     .limit(limit)
     .lean();
 
-  // 4. Aggregation for Stats (Performance Optimized)
+  
   const [totalTaskCounts, completedTaskCounts, hourCounts] = await Promise.all([
       Task.aggregate([
         { $unwind: '$assignees' }, 
@@ -50,7 +49,7 @@ export const getUsers = asyncHandler(async (req: Request, res: Response) => {
       ])
   ]);
 
-  // 5. Map stats to users
+ 
   const usersWithStats = users.map((user: any) => {
       const totalStat = totalTaskCounts.find(t => t._id.toString() === user._id.toString());
       const completedStat = completedTaskCounts.find(c => c._id.toString() === user._id.toString());
@@ -71,7 +70,7 @@ export const getUsers = asyncHandler(async (req: Request, res: Response) => {
   });
 });
 
-// @desc    Create new user (Admin)
+
 export const createUser = asyncHandler(async (req: Request, res: Response) => {
   const { name, email, password, role, department, skills } = req.body;
 
@@ -104,7 +103,7 @@ export const createUser = asyncHandler(async (req: Request, res: Response) => {
   }
 });
 
-// @desc    Delete user (Admin)
+
 export const deleteUser = asyncHandler(async (req: Request, res: Response) => {
   const user = await User.findById(req.params.id);
 
@@ -117,7 +116,7 @@ export const deleteUser = asyncHandler(async (req: Request, res: Response) => {
   }
 });
 
-// @desc    Update user by ID (Admin)
+
 export const updateUser = asyncHandler(async (req: Request, res: Response) => {
   const user = await User.findById(req.params.id);
 
@@ -144,7 +143,7 @@ export const updateUser = asyncHandler(async (req: Request, res: Response) => {
   }
 });
 
-// @desc    Get user profile
+
 export const getUserProfile = asyncHandler(async (req: AuthRequest, res: Response) => {
   const user = await User.findById(req.user._id);
   if (user) {
@@ -163,7 +162,7 @@ export const getUserProfile = asyncHandler(async (req: AuthRequest, res: Respons
   }
 });
 
-// @desc    Update user profile
+
 export const updateUserProfile = asyncHandler(async (req: AuthRequest, res: Response) => {
   const user = await User.findById(req.user._id);
   if (user) {

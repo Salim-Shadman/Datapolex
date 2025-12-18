@@ -11,17 +11,17 @@ interface SprintModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  sprintToEdit?: any; // New prop for editing
+  sprintToEdit?: any; 
 }
 
 export default function SprintModal({ projectId, isOpen, onClose, onSuccess, sprintToEdit }: SprintModalProps) {
   const { register, handleSubmit, reset, setValue } = useForm();
 
-  // Populate form if editing
+  
   useEffect(() => {
     if (sprintToEdit) {
         setValue('title', sprintToEdit.title);
-        // Date formatting for input type="date"
+      
         setValue('startDate', sprintToEdit.startDate.split('T')[0]);
         setValue('endDate', sprintToEdit.endDate.split('T')[0]);
     } else {
@@ -32,11 +32,11 @@ export default function SprintModal({ projectId, isOpen, onClose, onSuccess, spr
   const onSubmit = async (data: any) => {
     try {
       if (sprintToEdit) {
-        // Edit Mode
+        
         await api.put(`/sprints/${sprintToEdit._id}`, data);
         toast.success('Sprint updated successfully');
       } else {
-        // Create Mode
+       
         await api.post('/sprints', { ...data, projectId });
         toast.success('Sprint created successfully');
       }

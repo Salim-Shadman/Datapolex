@@ -22,7 +22,7 @@ export default function Sidebar() {
 
   return (
     <>
-    {/* Mobile Toggle Button */}
+ 
     <div className="md:hidden fixed top-4 left-4 z-50">
         <button 
             onClick={() => setIsMobileOpen(!isMobileOpen)} 
@@ -32,7 +32,7 @@ export default function Sidebar() {
         </button>
     </div>
 
-    {/* Overlay for Mobile */}
+    
     {isMobileOpen && (
         <div 
             className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm md:hidden"
@@ -40,12 +40,12 @@ export default function Sidebar() {
         />
     )}
 
-    {/* Sidebar Container */}
+    
     <div className={`
         fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white shadow-xl transition-transform duration-300 ease-in-out md:static md:translate-x-0 flex flex-col h-full border-r border-slate-800
         ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}
     `}>
-      {/* Logo Area */}
+     
       <div className="flex h-16 items-center justify-center border-b border-slate-800 bg-slate-950">
         <div className="flex items-center gap-2">
            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
@@ -55,10 +55,10 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* Navigation Links */}
+      
       <nav className="flex-1 space-y-1 px-3 py-6">
         {navItems.map((item) => {
-          // FIX: Improved Active Logic (Handles nested routes)
+          
           const isActive = item.href === '/dashboard' 
              ? pathname === '/dashboard' 
              : pathname.startsWith(item.href);
@@ -85,13 +85,13 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* User Profile Section (Bottom) */}
+      
       <div className="border-t border-slate-800 p-4 bg-slate-950/50">
         <div 
             onClick={() => setIsProfileOpen(true)}
             className="flex items-center w-full rounded-lg p-2 hover:bg-slate-800 transition cursor-pointer group"
         >
-          {/* USER AVATAR DISPLAY */}
+          
           <div className="relative mr-3 h-9 w-9 overflow-hidden rounded-full bg-indigo-500 border border-slate-600 group-hover:border-indigo-400 transition flex-shrink-0">
             {user?.avatar ? (
                 <Image 
@@ -130,7 +130,7 @@ export default function Sidebar() {
       </div>
     </div>
     
-    {/* Profile Modal */}
+   
     <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
     </>
   );

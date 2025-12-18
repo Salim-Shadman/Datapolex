@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import Cookies from 'js-cookie';
 import { useRouter } from 'next/navigation';
-import api from '@/utils/api'; // Import API helper
+import api from '@/utils/api'; 
 
 interface User {
   _id: string;
@@ -40,7 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (storedToken) {
         setToken(storedToken);
         
-        // Safety: Prevent crash if LocalStorage is corrupted
+        
         if (storedUser) {
            try {
              setUser(JSON.parse(storedUser));
@@ -51,13 +51,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         try {
-          // Verify with server to get fresh data
+          
           const { data } = await api.get('/users/profile');
           setUser(data);
           localStorage.setItem('user', JSON.stringify(data));
         } catch (error) {
           console.error("Session verification failed:", error);
-          // Only log out if we don't have a cached user to show
+          
           if (!storedUser) { 
              Cookies.remove('token');
              localStorage.removeItem('user');

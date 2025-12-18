@@ -1,10 +1,10 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-// CSS import path update kora hoyeche
+
 import 'react-quill-new/dist/quill.snow.css'; 
 
-// Import update: 'react-quill' -> 'react-quill-new'
+
 const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
 
 interface RichEditorProps {

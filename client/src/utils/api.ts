@@ -2,23 +2,22 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
 
-// --- CRITICAL FIX: Base URL Validation ---
+
 const baseApiUrl = process.env.NEXT_PUBLIC_API_URL || '';
 
-// নিশ্চিত করা হচ্ছে যে BASE URL এর শেষে '/api' আছে। 
-// এটি 404 Not Found এরর প্রতিরোধ করবে।
+
 const finalApiUrl = baseApiUrl.endsWith('/api') ? baseApiUrl : `${baseApiUrl}/api`;
 // ------------------------------------------
 
 const api = axios.create({
-  baseURL: finalApiUrl, // FIX: এখন finalApiUrl ব্যবহার করা হচ্ছে
+  baseURL: finalApiUrl, 
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000, // 10s Timeout added
+  timeout: 10000, 
 });
 
-// Request Interceptor
+
 api.interceptors.request.use(
   (config) => {
     const token = Cookies.get('token');
@@ -30,25 +29,24 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response Interceptor (Enhanced)
+
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     const originalRequest = error.config;
 
-    // 1. Handle Network Errors (Server Down / No Internet)
+   
     if (!error.response) {
       toast.error('Network error! Please check your connection or server status.');
       return Promise.reject(error);
     }
 
-    // 2. Handle Session Expiry (401)
+   
     if (error.response.status === 401 && !originalRequest._retry) {
       if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
         Cookies.remove('token');
         localStorage.removeItem('user');
         
-        // Prevent duplicate toasts
         if (!document.querySelector('.toast-session-expired')) {
             toast.error('Session expired. Please login again.', { className: 'toast-session-expired' });
             setTimeout(() => {
@@ -58,7 +56,7 @@ api.interceptors.response.use(
       }
     }
 
-    // 3. Handle Server Errors (500)
+  
     if (error.response.status >= 500) {
       toast.error('Server error! Please try again later.');
     }

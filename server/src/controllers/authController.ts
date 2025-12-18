@@ -3,13 +3,12 @@ import jwt from 'jsonwebtoken';
 import User from '../models/User';
 import asyncHandler from '../middleware/asyncHandler';
 
-// Generate JWT Token
+
 const generateToken = (id: string) => {
   return jwt.sign({ id }, process.env.JWT_SECRET as string, { expiresIn: '30d' });
 };
 
-// @desc    Register a new user
-// @route   POST /api/auth/register
+
 export const registerUser = asyncHandler(async (req: Request, res: Response) => {
   const { name, email, password, role, department, skills } = req.body;
 
@@ -19,7 +18,7 @@ export const registerUser = asyncHandler(async (req: Request, res: Response) => 
     throw new Error('User already exists');
   }
 
-  // FIX: Manual hashing removed. User model 'pre save' hook handles hashing automatically.
+
   const user = await User.create({
     name,
     email,
@@ -43,15 +42,14 @@ export const registerUser = asyncHandler(async (req: Request, res: Response) => 
   }
 });
 
-// @desc    Auth user & get token
-// @route   POST /api/auth/login
+
 export const loginUser = asyncHandler(async (req: Request, res: Response) => {
   const { email, password } = req.body;
 
-  // Find user by email
+  
   const user = await User.findOne({ email });
 
-  // Check if user exists and password matches
+  
   if (user && (await user.matchPassword(password))) {
     res.json({
       _id: user._id,

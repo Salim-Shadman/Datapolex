@@ -39,7 +39,7 @@ const TaskSchema: Schema = new Schema(
     title: { type: String, required: true, trim: true },
     description: { type: String },
     
-    // PERFORMANCE FIX: Added Indexes
+ 
     project: { type: mongoose.Schema.Types.ObjectId, ref: 'Project', required: true, index: true },
     sprint: { type: mongoose.Schema.Types.ObjectId, ref: 'Sprint', index: true },
     assignees: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User', index: true }],

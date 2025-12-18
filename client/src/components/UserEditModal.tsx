@@ -26,7 +26,7 @@ export default function UserEditModal({ user, isOpen, onClose, onSuccess }: User
 
   const onSubmit = async (data: any) => {
     try {
-      // Process skills from comma-separated string to array
+      
       const skillsArray = data.skills.split(',').map((s: string) => s.trim()).filter(Boolean);
       
       await api.put(`/users/${user._id}`, { 

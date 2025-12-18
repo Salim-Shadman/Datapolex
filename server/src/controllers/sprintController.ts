@@ -3,7 +3,7 @@ import Sprint from '../models/Sprint';
 import Task from '../models/Task'; 
 import asyncHandler from '../middleware/asyncHandler';
 
-// @desc    Get all sprints (Filter by Project ID)
+
 export const getSprints = asyncHandler(async (req: Request, res: Response) => {
   const { projectId } = req.query;
 
@@ -12,21 +12,20 @@ export const getSprints = asyncHandler(async (req: Request, res: Response) => {
      throw new Error('Project ID is required');
   }
 
-  // Sort by sprintNumber to show correct order
+  
   const sprints = await Sprint.find({ project: projectId } as any)
     .sort({ sprintNumber: 1 });
 
   res.json(sprints);
 });
 
-// @desc    Create a sprint (Auto-Increment Logic Added)
+
 export const createSprint = asyncHandler(async (req: Request, res: Response) => {
   const { title, goal, startDate, endDate, project } = req.body;
 
-  // FIX: Auto-increment Sprint Number
-  // Find the latest sprint for this project
+ 
   const lastSprint = await Sprint.findOne({ project } as any).sort({ sprintNumber: -1 });
-  // If lastSprint exists, increment. Else start at 1.
+
   const sprintNumber = lastSprint ? (lastSprint.sprintNumber || 0) + 1 : 1;
 
   const sprint = await Sprint.create({
@@ -42,7 +41,7 @@ export const createSprint = asyncHandler(async (req: Request, res: Response) => 
   res.status(201).json(sprint);
 });
 
-// @desc    Update sprint
+
 export const updateSprint = asyncHandler(async (req: Request, res: Response) => {
   const sprint = await Sprint.findById(req.params.id);
 
@@ -52,7 +51,7 @@ export const updateSprint = asyncHandler(async (req: Request, res: Response) => 
     sprint.startDate = req.body.startDate || sprint.startDate;
     sprint.endDate = req.body.endDate || sprint.endDate;
     sprint.status = req.body.status || sprint.status;
-    // sprintNumber should not be updated manually to preserve order
+    
 
     const updatedSprint = await sprint.save();
     res.json(updatedSprint);
@@ -62,12 +61,12 @@ export const updateSprint = asyncHandler(async (req: Request, res: Response) => 
   }
 });
 
-// @desc    Delete sprint
+
 export const deleteSprint = asyncHandler(async (req: Request, res: Response) => {
   const sprint = await Sprint.findById(req.params.id);
 
   if (sprint) {
-    // Tasks moved to backlog (sprint = null)
+    
     await Task.updateMany(
         { sprint: sprint._id } as any,
         { $set: { sprint: null } }

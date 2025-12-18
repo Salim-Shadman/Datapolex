@@ -28,11 +28,11 @@ export default function TeamPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // Pagination State
+  
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  // Modal States
+
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
@@ -40,16 +40,16 @@ export default function TeamPage() {
   const fetchUsers = async (pageNum = 1) => {
     setLoading(true);
     try {
-      // FIX: পেজিনেশন প্যারামিটার পাঠানো হচ্ছে
+     
       const res = await api.get(`/users?page=${pageNum}&limit=10`);
       
-      // CRITICAL FIX: Backend এখন { users: [], ... } রিটার্ন করে, সরাসরি array না
+      
       if (res.data.users) {
           setUsers(res.data.users);
           setTotalPages(res.data.pages || 1);
           setPage(res.data.page || 1);
       } else {
-          // ফলব্যাক (যদি API স্ট্রাকচার ভিন্ন হয়)
+         
           setUsers(Array.isArray(res.data) ? res.data : []);
       }
     } catch (error) {
@@ -69,7 +69,7 @@ export default function TeamPage() {
     try {
         await api.delete(`/users/${deleteUserId}`); 
         toast.success('Member removed');
-        // রিফ্রেশ করার বদলে আমরা ইউআই থেকে ফিল্টার করে দিচ্ছি (ফাস্টার এক্সপেরিয়েন্স)
+        
         setUsers(users.filter(u => u._id !== deleteUserId));
     } catch (error: any) {
         toast.error(error.response?.data?.message || 'Failed to remove member');
@@ -169,7 +169,7 @@ export default function TeamPage() {
                         >
                             <Edit2 size={16}/>
                         </button>
-                        {/* Prevent self-delete */}
+                        
                         {member._id !== currentUser._id && (
                             <button 
                                 onClick={() => setDeleteUserId(member._id)}
@@ -185,7 +185,7 @@ export default function TeamPage() {
         ))}
       </div>
 
-      {/* Pagination Controls */}
+      
       {totalPages > 1 && (
           <div className="flex justify-center items-center mt-8 gap-4">
               <button 

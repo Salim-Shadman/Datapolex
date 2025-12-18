@@ -24,7 +24,7 @@ const formatHoursToDuration = (totalHours: number) => {
     return `${minutes}m`;
 };
 
-// Separated Timer Component for better performance
+
 function TimerDisplay({ startTime, isRunning, onToggle }: { startTime: Date | null, isRunning: boolean, onToggle: () => void }) {
     const [elapsed, setElapsed] = useState('00:00:00');
     
@@ -196,7 +196,7 @@ export default function TaskDetailsModal({ task, isOpen, onClose, onUpdate }: Ta
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="w-full max-w-3xl bg-white rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-        {/* Header */}
+        
         <div className="flex justify-between items-start p-6 border-b border-gray-100 bg-gray-50/50">
           <div>
             <div className="flex items-center space-x-3 mb-3">
@@ -210,7 +210,7 @@ export default function TaskDetailsModal({ task, isOpen, onClose, onUpdate }: Ta
 
         <div className="flex-1 overflow-y-auto p-6 space-y-8">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Left Column */}
+               
                 <div className="lg:col-span-2 space-y-8">
                     <div>
                         <h3 className="text-sm font-bold text-gray-900 flex items-center mb-3">
@@ -239,7 +239,7 @@ export default function TaskDetailsModal({ task, isOpen, onClose, onUpdate }: Ta
                     </div>
                 </div>
 
-                {/* Right Column */}
+                
                 <div className="space-y-6">
                     <TimerDisplay startTime={localStartTime} isRunning={isTimerRunning} onToggle={handleToggleTimer} />
 

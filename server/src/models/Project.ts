@@ -31,7 +31,7 @@ const ProjectSchema = new Schema<IProject>(
   { timestamps: true }
 );
 
-// PERFORMANCE FIX: Text Index for Fast Search on Title and Client
+
 ProjectSchema.index({ title: 'text', client: 'text' });
 
 export default mongoose.model<IProject>('Project', ProjectSchema);

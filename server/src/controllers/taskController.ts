@@ -8,8 +8,7 @@ interface AuthRequest extends Request {
   user?: any;
 }
 
-// @desc    Create a task
-// @route   POST /api/tasks
+
 export const createTask = asyncHandler(async (req: Request, res: Response) => {
   const { title, description, project, sprint, assignees, priority, dueDate, status, attachments, estimate } = req.body;
 
@@ -39,8 +38,7 @@ export const createTask = asyncHandler(async (req: Request, res: Response) => {
   res.status(201).json(populatedTask);
 });
 
-// @desc    Get all tasks with Pagination & Filters
-// @route   GET /api/tasks
+
 export const getTasks = asyncHandler(async (req: Request, res: Response) => {
   const { projectId, sprintId, status, priority, assignee, page, limit } = req.query;
 
@@ -52,9 +50,9 @@ export const getTasks = asyncHandler(async (req: Request, res: Response) => {
   if (priority) query.priority = priority;
   if (assignee) query.assignees = assignee;
 
-  // Pagination Logic
+
   const pageNum = Number(page) || 1;
-  const limitNum = Number(limit) || 50; // Default to 50 items per load
+  const limitNum = Number(limit) || 50; 
   const skip = (pageNum - 1) * limitNum;
 
   const tasks = await Task.find(query)
@@ -69,13 +67,12 @@ export const getTasks = asyncHandler(async (req: Request, res: Response) => {
   res.json(tasks);
 });
 
-// @desc    Update task (With Security Check)
-// @route   PUT /api/tasks/:id
+
 export const updateTask = asyncHandler(async (req: AuthRequest, res: Response) => {
   const task = await Task.findById(req.params.id);
 
   if (task) {
-    // Security Check: Review to Done requires Manager/Admin
+  
     if (task.status === 'review' && req.body.status === 'done') {
         if (req.user.role !== 'admin' && req.user.role !== 'manager') {
             res.status(403);
@@ -109,8 +106,7 @@ export const updateTask = asyncHandler(async (req: AuthRequest, res: Response) =
   }
 });
 
-// @desc    Delete task
-// @route   DELETE /api/tasks/:id
+
 export const deleteTask = asyncHandler(async (req: Request, res: Response) => {
   const task = await Task.findById(req.params.id);
 
@@ -123,8 +119,7 @@ export const deleteTask = asyncHandler(async (req: Request, res: Response) => {
   }
 });
 
-// @desc    Add comment
-// @route   POST /api/tasks/:id/comments
+
 export const addComment = asyncHandler(async (req: AuthRequest, res: Response) => {
   const task = await Task.findById(req.params.id);
   if (task) {
@@ -142,8 +137,7 @@ export const addComment = asyncHandler(async (req: AuthRequest, res: Response) =
   }
 });
 
-// @desc    Log time
-// @route   POST /api/tasks/:id/log-time
+
 export const logTime = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { hours } = req.body;
   const task = await Task.findById(req.params.id);
@@ -163,8 +157,7 @@ export const logTime = asyncHandler(async (req: AuthRequest, res: Response) => {
   }
 });
 
-// @desc    Toggle Timer
-// @route   POST /api/tasks/:id/timer
+
 export const toggleTimer = asyncHandler(async (req: AuthRequest, res: Response) => {
   const task = await Task.findById(req.params.id);
   const userId = req.user._id;

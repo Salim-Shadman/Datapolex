@@ -165,7 +165,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* NEW: Analytics Charts */}
+      
       {isAdminOrManager && stats.chartData && (
         <motion.div variants={item}>
             <DashboardCharts data={stats.chartData} />

@@ -19,7 +19,7 @@ export default function EditProjectModal({ isOpen, onClose, project, onUpdate }:
   const [loading, setLoading] = useState(false);
   const [thumbnailUrl, setThumbnailUrl] = useState('');
 
-  // মডাল ওপেন হলে কারেন্ট ডেটা দিয়ে ফর্ম ফিল করা
+ 
   useEffect(() => {
     if (project) {
       setThumbnailUrl(project.thumbnail || '');
@@ -29,7 +29,7 @@ export default function EditProjectModal({ isOpen, onClose, project, onUpdate }:
       setValue('budget', project.budget);
       setValue('status', project.status);
       
-      // Date formatting for input type="date"
+     
       if (project.startDate) setValue('startDate', new Date(project.startDate).toISOString().split('T')[0]);
       if (project.endDate) setValue('endDate', new Date(project.endDate).toISOString().split('T')[0]);
     }
@@ -66,7 +66,7 @@ export default function EditProjectModal({ isOpen, onClose, project, onUpdate }:
         thumbnail: thumbnailUrl
       });
 
-      onUpdate(res.data); // প্যারেন্ট কম্পোনেন্টে ডেটা আপডেট পাঠানো
+      onUpdate(res.data); 
       toast.success('Project updated successfully!');
       onClose();
     } catch (error: any) {
@@ -86,7 +86,7 @@ export default function EditProjectModal({ isOpen, onClose, project, onUpdate }:
 
         <div className="overflow-y-auto p-6">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-                {/* Thumbnail Upload */}
+                
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Project Thumbnail</label>
                     <div className="flex items-center gap-4">

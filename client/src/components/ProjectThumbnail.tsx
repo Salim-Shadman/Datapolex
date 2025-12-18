@@ -31,7 +31,7 @@ export default function ProjectThumbnail({ src, alt, className, children }: Proj
         />
       )}
       
-      {/* This renders your custom overlays (Gradient, Status, Buttons) */}
+      
       {children}
     </div>
   );

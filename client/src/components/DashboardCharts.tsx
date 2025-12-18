@@ -7,7 +7,7 @@ interface DashboardChartsProps {
 }
 
 export default function DashboardCharts({ data }: DashboardChartsProps) {
-  // Only show chart if there is data
+  
   if (!data || data.every(d => d.value === 0)) {
     return (
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-center h-64 text-gray-400">
@@ -18,11 +18,11 @@ export default function DashboardCharts({ data }: DashboardChartsProps) {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-      {/* Pie Chart: Task Status */}
+     
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col">
         <h3 className="text-lg font-bold text-gray-900 mb-4">Task Status Distribution</h3>
         
-        {/* FIX: Explicit height added here */}
+        
         <div className="flex-1 w-full" style={{ minHeight: '300px' }}>
             <ResponsiveContainer width="100%" height="100%">
             <PieChart>
@@ -46,11 +46,11 @@ export default function DashboardCharts({ data }: DashboardChartsProps) {
         </div>
       </div>
 
-      {/* Bar Chart: Simple Visualization */}
+      
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col">
         <h3 className="text-lg font-bold text-gray-900 mb-4">Task Overview</h3>
         
-        {/* FIX: Explicit height added here */}
+        
         <div className="flex-1 w-full" style={{ minHeight: '300px' }}>
             <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data}>

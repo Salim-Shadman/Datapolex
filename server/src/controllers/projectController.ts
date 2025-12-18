@@ -125,8 +125,7 @@ export const updateProject = asyncHandler(async (req: Request, res: Response) =>
   }
 });
 
-// @desc    Delete project (Secure Transaction with Fallback)
-// @route   DELETE /api/projects/:id
+
 export const deleteProject = asyncHandler(async (req: Request, res: Response) => {
   const session = await mongoose.startSession();
   
@@ -151,14 +150,12 @@ export const deleteProject = asyncHandler(async (req: Request, res: Response) =>
 
     res.json({ message: 'Project and all associated data removed securely' });
   } catch (error: any) {
-    // Abort Transaction if active
+  
     if (session.inTransaction()) {
         await session.abortTransaction();
     }
     session.endSession();
     
-    // Fallback: If Transaction fails (No Replica Set), delete normally
-    // This is crucial for local development or simple hosting
     if (error.message && error.message.includes('Transaction numbers are only valid')) {
         console.warn('⚠️ Transaction failed (likely no Replica Set). Falling back to standard delete.');
         

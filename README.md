@@ -1,96 +1,101 @@
-# 🚀 Minimal Project Management System (MPMS)
+🚀 Minimal Project Management System (MPMS)
 
-A full-stack, production-ready Project Management Dashboard designed to streamline team collaboration, sprint planning, and task tracking. Built with the **MERN Stack (Next.js & Express)**, this application offers a real-world experience with features like **Kanban Boards**, **Time Tracking**, **Analytics**, and **Enterprise-Grade Security**.
+A full-stack, production-ready Project Management Dashboard designed to streamline team collaboration, sprint planning, and task tracking. Built with the MERN Stack (Next.js & Express), this application offers a real-world experience with features like Kanban Boards, Time Tracking, Analytics, and Enterprise-Grade Security.
 
-🔴 **Live Site:** [Insert Your Vercel/Live Link Here]
-⚙️ **Server API:** [Insert Your Render/Server Link Here]
+Live Site:
+https://datapolex-client.vercel.app/
 
----
+Server API:
+https://datapolex.vercel.app/
 
-## 🔥 Key Features
 
-### 1. 📊 Interactive Dashboard & Analytics
-- Visualizes project health using **Recharts**.
-- **Pie Charts** for task status distribution.
-- **Bar Charts** for priority-based task analysis.
-- Real-time stats on Budget, Active Projects, and Pending Reviews.
+====================
+KEY FEATURES
+====================
 
-### 2. 📋 Advanced Task Management
-- **Kanban Board:** Drag-and-drop interface (Hello Pangea DnD).
-- **Rich Text Editor:** Tasks support formatted descriptions using `react-quill-new`.
-- **File Attachments:** Upload images/PDFs/Docs securely to Cloudinary with size limits.
+1) Interactive Dashboard & Analytics
+- Project health visualization using Recharts
+- Pie charts for task status distribution
+- Bar charts for priority-based task analysis
+- Real-time stats for Budget, Active Projects, and Pending Reviews
 
-### 3. 🛡️ Enterprise Security & Performance
-- **Security:** Helmet, CORS, Rate Limiting, and NoSQL Injection Protection (Sanitization).
-- **Performance:** Gzip Compression enabled for 70% faster API responses.
-- **Authentication:** JWT-based secure login with session sync.
-- **Role-Based Access (RBAC):** Granular permissions for Admin, Manager, and Member.
+2) Advanced Task Management
+- Kanban Board with drag-and-drop (Hello Pangea DnD)
+- Rich Text Editor using react-quill-new
+- Secure file uploads (Images / PDFs / Docs) via Cloudinary with size limits
 
-### 4. ⏱️ Time Tracking & Sprints
-- **Agile Workflow:** Create and manage Sprints.
-- **Time Logging:** Track actual vs estimated hours with built-in timers.
+3) Enterprise Security & Performance
+- Security: Helmet, CORS, Rate Limiting, MongoDB Sanitization
+- Performance: Gzip compression (up to 70% faster responses)
+- Authentication: JWT-based secure login
+- Role-Based Access Control (Admin, Manager, Member)
 
----
+4) Time Tracking & Sprints
+- Agile sprint creation and management
+- Time logging (estimated vs actual hours)
 
-## 🛠️ Tech Stack
 
-### Frontend
-- **Framework:** Next.js 14 (App Router)
-- **Styling:** Tailwind CSS
-- **State:** Context API
-- **Visuals:** Recharts, Lucide React
+====================
+TECH STACK
+====================
 
-### Backend
-- **Runtime:** Node.js & Express.js
-- **Database:** MongoDB (Mongoose)
-- **Security:** Helmet, Express-Rate-Limit, Mongo-Sanitize
-- **Storage:** Cloudinary
+Frontend:
+- Next.js 14 (App Router)
+- Tailwind CSS
+- Context API
+- Recharts, Lucide React
 
----
+Backend:
+- Node.js
+- Express.js
+- MongoDB (Mongoose)
+- Helmet, Express-Rate-Limit, Mongo-Sanitize
+- Cloudinary for file storage
 
-## 🚀 How to Run (3 Ways)
 
-### Option 1: The Magic Command (Recommended) 🪄
-Run both frontend and backend with a single command!
+====================
+HOW TO RUN THE PROJECT
+====================
 
-# 1. Install dependencies
+OPTION 1: MAGIC COMMAND (Recommended)
+
+# Install dependencies
 npm install
 npm run install:all
 
-# 2. Start Everything
+# Start frontend & backend together
 npm start
 
-*App will run at http://localhost:3000*
+App runs on:
+http://localhost:3000
 
----
 
-### Option 2: Using Docker 🐳
-Run the entire stack (Frontend + Backend + Database) in a container.
+OPTION 2: USING DOCKER
 
 docker-compose up --build
 
----
 
-### Option 3: Manual Setup
-If you prefer running them separately:
+OPTION 3: MANUAL SETUP
 
-**1. Backend Setup**
+Backend Setup:
 cd server
 npm install
-# Create .env file (see below)
+# create .env file
 npm run dev
 
-**2. Frontend Setup**
+Frontend Setup:
 cd client
 npm install
-# Create .env.local file (see below)
+# create .env.local file
 npm run dev
 
----
 
-## 🔑 Environment Variables (.env)
+====================
+ENVIRONMENT VARIABLES
+====================
 
-**Server (server/.env):**
+Server (server/.env):
+
 PORT=5000
 MONGO_URI=your_mongodb_connection_string
 JWT_SECRET=super_secret_key
@@ -99,21 +104,30 @@ CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
 
-**Client (client/.env.local):**
+
+Client (client/.env.local):
+
 NEXT_PUBLIC_API_URL=http://localhost:5000/api
 
----
 
-## 🔐 Admin Credentials (For Testing)
-We have pre-seeded the database with these credentials:
+====================
+ADMIN CREDENTIALS (TESTING)
+====================
 
-- **Email:** admin@datapolex.com
-- **Password:** password123
+Email: admin@datapolex.com
+Password: password123
 
----
 
-## 🤝 Contribution
-Feel free to fork this repository and submit pull requests. Any improvements are welcome!
+====================
+CONTRIBUTION
+====================
 
-## 📄 License
-This project is licensed under the MIT License.
+Feel free to fork this repository and submit pull requests.
+All improvements are welcome.
+
+
+====================
+LICENSE
+====================
+
+MIT License

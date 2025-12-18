@@ -26,7 +26,7 @@ export default function TaskModal({ projectId, sprintId, isOpen, onClose, onSucc
 
   useEffect(() => {
     if (isOpen) {
-        // PERFORMANCE: Fetch simple list only (names/ids) instead of full stats
+     
         api.get('/users?simple=true').then((res) => setUsers(res.data)).catch(console.error);
         register('description');
     }
