@@ -6,7 +6,7 @@ import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import compression from 'compression';
 import mongoose from 'mongoose';
-import connectDB from './config/db';
+import connectDB from './config/db'; //
 
 import authRoutes from './routes/authRoutes';
 import projectRoutes from './routes/projectRoutes';
@@ -23,37 +23,50 @@ dotenv.config();
 // ENV Validation
 if (!process.env.MONGO_URI || !process.env.JWT_SECRET) {
   console.error('FATAL ERROR: MONGO_URI or JWT_SECRET is not defined in .env');
-  // Vercel-এ process.exit() ব্যবহার না করাই ভালো, তবে লগ থাকা জরুরি
 }
 
-// Connect to Database (Non-blocking for serverless cold start)
-connectDB();
+// আমরা এখানে টপ-লেভেলে connectDB কল করব না, কারণ এটি async এবং Vercel এ রেস কন্ডিশন তৈরি করে।
+// connectDB(); <--- এটি সরানো হয়েছে
 
 const app = express();
 
 // ===========================================
-// 1. Security & Helmet
+// 1. Database Connection Middleware (CRITICAL FIX)
+// ===========================================
+// এই মিডলওয়্যারটি প্রতিটা রিকোয়েস্টের শুরুতে চেক করবে ডাটাবেস কানেক্টেড কিনা।
+// কানেক্টেড না থাকলে কানেক্ট করবে এবং তারপর রিকোয়েস্ট প্রসেস করবে।
+app.use(async (req, res, next) => {
+  try {
+    await connectDB(); //
+    next();
+  } catch (error) {
+    console.error('Database Connection Failed via Middleware:', error);
+    res.status(500).json({ message: 'Database connection failed' });
+  }
+});
+
+// ===========================================
+// 2. Security & Helmet
 // ===========================================
 app.use(helmet({ 
-  crossOriginResourcePolicy: false, // ইমেজ বা ফাইল লোডের জন্য এটি ফলস রাখা জরুরি
+  crossOriginResourcePolicy: false, 
 }));
 
 // ===========================================
-// 2. CORS Configuration
+// 3. CORS Configuration
 // ===========================================
 const allowedOrigins = [
   'http://localhost:3000', 
-  process.env.CLIENT_URL, // .env থেকে ক্লায়েন্ট ইউআরএল
+  process.env.CLIENT_URL, 
   'https://datapolex-client.vercel.app', 
   
   // Vercel Preview Deployments (Regex)
   /https:\/\/datapolex-client-git-.*\.vercel\.app$/,
   /https:\/\/datapolex-.*\.vercel\.app$/, 
-].filter(Boolean); // undefined বা null ফিল্টার করে বাদ দেওয়া
+].filter(Boolean); 
 
 app.use(cors({
   origin: (origin, callback) => {
-    // সার্ভার-টু-সার্ভার রিকোয়েস্ট বা পোস্টম্যানের জন্য origin undefined হতে পারে
     if (!origin) return callback(null, true);
 
     const isAllowed = allowedOrigins.some(ao => {
@@ -76,19 +89,19 @@ app.use(cors({
 }));
 
 // ===========================================
-// 3. Middleware
+// 4. Middleware
 // ===========================================
-app.use(compression()); // রেসপন্স সাইজ ছোট করার জন্য
-app.use(express.json({ limit: '10kb' })); // বডি সাইজ লিমিট (DoS প্রোটেকশন)
-app.use(sanitizeData); // NoSQL Injection প্রতিরোধ
+app.use(compression());
+app.use(express.json({ limit: '10kb' }));
+app.use(sanitizeData);
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
 // ===========================================
-// 4. Rate Limiting (DDoS Protection)
+// 5. Rate Limiting
 // ===========================================
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // ১৫ মিনিট
-  max: 300, // লিমিট বাড়িয়ে ৩০০ করা হলো (API heavy অ্যাপের জন্য)
+  windowMs: 15 * 60 * 1000, 
+  max: 300, 
   standardHeaders: true, 
   legacyHeaders: false,
   message: { message: 'Too many requests from this IP, please try again later.' }
@@ -97,7 +110,7 @@ app.use('/api', limiter);
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 20, // লগইন অ্যাটেম্পট লিমিট
+  max: 20, 
   message: { message: 'Too many login attempts, please try again later' }
 });
 app.use('/api/auth', authLimiter);
@@ -132,7 +145,6 @@ if (process.env.NODE_ENV !== 'production') {
     console.log(`🚀 Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
   });
 
-  // Graceful Shutdown Logic
   const gracefulShutdown = () => {
     console.log('🔄 Received kill signal, shutting down gracefully...');
     server.close(() => {
