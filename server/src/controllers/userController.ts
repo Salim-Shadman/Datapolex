@@ -7,23 +7,50 @@ interface AuthRequest extends Request {
   user?: any;
 }
 
-// @desc    Get all users with Full Stats (Supports ?simple=true for dropdowns)
+// @desc    Get all users with Full Stats & Pagination
+// @route   GET /api/users
 export const getUsers = asyncHandler(async (req: Request, res: Response) => {
-  // OPTIMIZATION: If simple list is requested (for Dropdowns), skip heavy aggregation
+  // 1. Simple List for Dropdowns (Lightweight Query)
   if (req.query.simple === 'true') {
-      const users = await User.find({}).select('_id name email role avatar department').sort({ name: 1 }).lean();
-      return res.json(users); // Return early
+      const users = await User.find({})
+        .select('_id name email role avatar department')
+        .sort({ name: 1 })
+        .lean();
+      return res.json(users);
   }
 
-  // Heavy Stats Calculation for Team Page
-  const users = await User.find({}).select('-password').sort({ createdAt: -1 }).lean();
+  // 2. Pagination Logic
+  const page = Number(req.query.page) || 1;
+  const limit = Number(req.query.limit) || 20; // Default 20 users per page
+  const skip = (page - 1) * limit;
 
+  // 3. Fetch Users
+  const totalUsers = await User.countDocuments({});
+  const users = await User.find({})
+    .select('-password')
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit)
+    .lean();
+
+  // 4. Aggregation for Stats (Performance Optimized)
   const [totalTaskCounts, completedTaskCounts, hourCounts] = await Promise.all([
-      Task.aggregate([{ $unwind: '$assignees' }, { $group: { _id: '$assignees', count: { $sum: 1 } } }]),
-      Task.aggregate([{ $match: { status: 'done' } }, { $unwind: '$assignees' }, { $group: { _id: '$assignees', count: { $sum: 1 } } }]),
-      Task.aggregate([{ $unwind: '$timeLogs' }, { $group: { _id: '$timeLogs.user', totalHours: { $sum: '$timeLogs.hours' } } }])
+      Task.aggregate([
+        { $unwind: '$assignees' }, 
+        { $group: { _id: '$assignees', count: { $sum: 1 } } }
+      ]),
+      Task.aggregate([
+        { $match: { status: 'done' } }, 
+        { $unwind: '$assignees' }, 
+        { $group: { _id: '$assignees', count: { $sum: 1 } } }
+      ]),
+      Task.aggregate([
+        { $unwind: '$timeLogs' }, 
+        { $group: { _id: '$timeLogs.user', totalHours: { $sum: '$timeLogs.hours' } } }
+      ])
   ]);
 
+  // 5. Map stats to users
   const usersWithStats = users.map((user: any) => {
       const totalStat = totalTaskCounts.find(t => t._id.toString() === user._id.toString());
       const completedStat = completedTaskCounts.find(c => c._id.toString() === user._id.toString());
@@ -35,7 +62,13 @@ export const getUsers = asyncHandler(async (req: Request, res: Response) => {
           totalHours: hourStat ? hourStat.totalHours : 0
       };
   });
-  res.json(usersWithStats);
+
+  res.json({
+    users: usersWithStats,
+    page,
+    pages: Math.ceil(totalUsers / limit),
+    total: totalUsers
+  });
 });
 
 // @desc    Create new user (Admin)

@@ -20,83 +20,89 @@ import { sanitizeData } from './middleware/sanitizeMiddleware';
 
 dotenv.config();
 
-// FIX: Production Safety Check এ process.exit() রিমুভ করা হয়েছে
+// ENV Validation
 if (!process.env.MONGO_URI || !process.env.JWT_SECRET) {
-  console.error('FATAL ERROR: MONGO_URI or JWT_SECRET is not defined in .env (Check Vercel ENV)');
+  console.error('FATAL ERROR: MONGO_URI or JWT_SECRET is not defined in .env');
+  // Vercel-এ process.exit() ব্যবহার না করাই ভালো, তবে লগ থাকা জরুরি
 }
 
-// Connect to Database
+// Connect to Database (Non-blocking for serverless cold start)
 connectDB();
 
 const app = express();
 
+// ===========================================
 // 1. Security & Helmet
+// ===========================================
 app.use(helmet({ 
-  crossOriginResourcePolicy: false, 
+  crossOriginResourcePolicy: false, // ইমেজ বা ফাইল লোডের জন্য এটি ফলস রাখা জরুরি
 }));
 
 // ===========================================
-// CRITICAL FIX: Robust CORS Configuration
+// 2. CORS Configuration
 // ===========================================
 const allowedOrigins = [
   'http://localhost:3000', 
-  process.env.CLIENT_URL,
-  
-  // FIX: ক্লায়েন্ট-এর লাইভ ডোমেইন
+  process.env.CLIENT_URL, // .env থেকে ক্লায়েন্ট ইউআরএল
   'https://datapolex-client.vercel.app', 
   
-  // CRITICAL FIX: Vercel প্রিভিউ ডোমেইন এবং অন্য কোনো Vercel ডোমেইন Allow করার জন্য RegEx
+  // Vercel Preview Deployments (Regex)
   /https:\/\/datapolex-client-git-.*\.vercel\.app$/,
   /https:\/\/datapolex-.*\.vercel\.app$/, 
-].filter(Boolean);
+].filter(Boolean); // undefined বা null ফিল্টার করে বাদ দেওয়া
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Check against explicit strings and RegEx patterns
+    // সার্ভার-টু-সার্ভার রিকোয়েস্ট বা পোস্টম্যানের জন্য origin undefined হতে পারে
+    if (!origin) return callback(null, true);
+
     const isAllowed = allowedOrigins.some(ao => {
         if (ao instanceof RegExp) {
-            return ao.test(origin || '');
+            return ao.test(origin);
         }
         return ao === origin;
     });
 
-    if (!origin || isAllowed) {
+    if (isAllowed) {
       callback(null, true);
     } else {
-      // FIX: Debugging এর জন্য স্পষ্ট এরর মেসেজ
-      callback(new Error(`Not allowed by CORS: ${origin}`));
+      console.warn(`Blocked by CORS: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  // FIX: Authorization header এবং x-requested-with header যোগ করা হলো
   allowedHeaders: ['Content-Type', 'Authorization', 'x-requested-with']
 }));
 
-// 2. Middleware
-app.use(compression());
-app.use(express.json({ limit: '10kb' }));
-app.use(sanitizeData);
+// ===========================================
+// 3. Middleware
+// ===========================================
+app.use(compression()); // রেসপন্স সাইজ ছোট করার জন্য
+app.use(express.json({ limit: '10kb' })); // বডি সাইজ লিমিট (DoS প্রোটেকশন)
+app.use(sanitizeData); // NoSQL Injection প্রতিরোধ
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
-// 3. Rate Limiting
+// ===========================================
+// 4. Rate Limiting (DDoS Protection)
+// ===========================================
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, 
-  max: 200, 
+  windowMs: 15 * 60 * 1000, // ১৫ মিনিট
+  max: 300, // লিমিট বাড়িয়ে ৩০০ করা হলো (API heavy অ্যাপের জন্য)
   standardHeaders: true, 
   legacyHeaders: false,
-  message: 'Too many requests from this IP, please try again later.'
+  message: { message: 'Too many requests from this IP, please try again later.' }
 });
 app.use('/api', limiter);
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 20, 
-  message: 'Too many login attempts, please try again later'
+  max: 20, // লগইন অ্যাটেম্পট লিমিট
+  message: { message: 'Too many login attempts, please try again later' }
 });
 app.use('/api/auth', authLimiter);
 
-// Routes
+//Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/sprints', sprintRoutes);
@@ -109,29 +115,31 @@ app.use('/api/dashboard', dashboardRoutes);
 app.get('/', (req, res) => { 
   res.status(200).json({ 
     status: 'active', 
-    message: 'MPMS API is running securely on Vercel.',
-    timestamp: new Date().toISOString()
+    message: 'Datapolex API is running securely.',
+    timestamp: new Date().toISOString(),
+    env: process.env.NODE_ENV
   }); 
 });
 
-// Error Handling
+// Global Error Handler
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-// VERCEL DEPLOYMENT FIX (app.listen only for local)
+// Local Development Server
 if (process.env.NODE_ENV !== 'production') {
   const server = app.listen(PORT, () => {
     console.log(`🚀 Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
   });
 
-  // Graceful Shutdown (Local-এ রাখা হলো)
+  // Graceful Shutdown Logic
   const gracefulShutdown = () => {
     console.log('🔄 Received kill signal, shutting down gracefully...');
     server.close(() => {
       console.log('🛑 Closed out remaining connections.');
       mongoose.connection.close(false).then(() => {
           console.log('🍃 MongoDB connection closed.');
+          process.exit(0);
       });
     });
   };
@@ -140,5 +148,5 @@ if (process.env.NODE_ENV !== 'production') {
   process.on('SIGINT', gracefulShutdown);
 }
 
-// Vercel এর জন্য app কে এক্সপোর্ট করা আবশ্যক
+// Vercel Export
 export default app;

@@ -19,10 +19,11 @@ export default function DashboardCharts({ data }: DashboardChartsProps) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
       {/* Pie Chart: Task Status */}
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col">
         <h3 className="text-lg font-bold text-gray-900 mb-4">Task Status Distribution</h3>
-        {/* FIX: Added style={{ width: '100%', height: 250 }} to parent explicitly */}
-        <div style={{ width: '100%', height: 250 }}>
+        
+        {/* FIX: Explicit height added here */}
+        <div className="flex-1 w-full" style={{ minHeight: '300px' }}>
             <ResponsiveContainer width="100%" height="100%">
             <PieChart>
                 <Pie
@@ -46,9 +47,11 @@ export default function DashboardCharts({ data }: DashboardChartsProps) {
       </div>
 
       {/* Bar Chart: Simple Visualization */}
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col">
         <h3 className="text-lg font-bold text-gray-900 mb-4">Task Overview</h3>
-        <div style={{ width: '100%', height: 250 }}>
+        
+        {/* FIX: Explicit height added here */}
+        <div className="flex-1 w-full" style={{ minHeight: '300px' }}>
             <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data}>
                 <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />

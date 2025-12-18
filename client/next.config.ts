@@ -12,7 +12,13 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'images.unsplash.com' },
       { protocol: 'https', hostname: 'i.pravatar.cc' },
       { protocol: 'https', hostname: 'picsum.photos' },
+      // FIX: DiceBear Domain Added
+      { protocol: 'https', hostname: 'api.dicebear.com' },
     ],
+    // SVG ইমেজের জন্য এই কনফিগারেশনটি মাঝে মাঝে প্রয়োজন হতে পারে (DiceBear SVG রিটার্ন করে)
+    dangerouslyAllowSVG: true,
+    contentDispositionType: 'attachment',
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
   // SECURITY HEADERS
   async headers() {

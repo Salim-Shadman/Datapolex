@@ -29,15 +29,10 @@ export const getProjects = asyncHandler(async (req: Request, res: Response) => {
   const skip = (pageNum - 1) * limitNum;
 
   const projects = await Project.aggregate([
-    // 1. Filter first
     { $match: matchStage },
-    
-    // 2. Sort & Paginate EARLY (Huge Performance Boost)
     { $sort: { createdAt: -1 } },
     { $skip: skip },
     { $limit: limitNum },
-
-    // 3. Lookup Tasks ONLY for the paginated results
     {
       $lookup: {
         from: 'tasks',
@@ -130,13 +125,14 @@ export const updateProject = asyncHandler(async (req: Request, res: Response) =>
   }
 });
 
-// @desc    Delete project (Secure Transaction)
+// @desc    Delete project (Secure Transaction with Fallback)
 // @route   DELETE /api/projects/:id
 export const deleteProject = asyncHandler(async (req: Request, res: Response) => {
   const session = await mongoose.startSession();
-  session.startTransaction();
-
+  
   try {
+    session.startTransaction();
+
     const project = await Project.findById(req.params.id).session(session);
 
     if (!project) {
@@ -154,9 +150,31 @@ export const deleteProject = asyncHandler(async (req: Request, res: Response) =>
     session.endSession();
 
     res.json({ message: 'Project and all associated data removed securely' });
-  } catch (error) {
-    await session.abortTransaction();
+  } catch (error: any) {
+    // Abort Transaction if active
+    if (session.inTransaction()) {
+        await session.abortTransaction();
+    }
     session.endSession();
+    
+    // Fallback: If Transaction fails (No Replica Set), delete normally
+    // This is crucial for local development or simple hosting
+    if (error.message && error.message.includes('Transaction numbers are only valid')) {
+        console.warn('⚠️ Transaction failed (likely no Replica Set). Falling back to standard delete.');
+        
+        const project = await Project.findById(req.params.id);
+        if(!project) {
+             res.status(404);
+             throw new Error('Project not found');
+        }
+
+        await Task.deleteMany({ project: req.params.id } as any);
+        await Sprint.deleteMany({ project: req.params.id } as any);
+        await project.deleteOne();
+        
+        return res.json({ message: 'Project deleted (Fallback mode)' });
+    }
+
     throw error;
   }
 });

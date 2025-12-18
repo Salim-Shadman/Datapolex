@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
-import asyncHandler from './asyncHandler'; // FIX: প্যাকেজ এর বদলে লোকাল ফাইল ইম্পোর্ট করা হলো
+import asyncHandler from './asyncHandler';
 import User from '../models/User';
 
 interface AuthRequest extends Request {
@@ -13,12 +13,18 @@ const protect = asyncHandler(async (req: AuthRequest, res: Response, next: NextF
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     try {
       token = req.headers.authorization.split(' ')[1];
-      const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'secret');
+
+      // FIX: Ensure JWT_SECRET exists
+      if (!process.env.JWT_SECRET) {
+          throw new Error('JWT_SECRET not configured in server environment');
+      }
+
+      const decoded: any = jwt.verify(token, process.env.JWT_SECRET);
 
       req.user = await User.findById(decoded.id).select('-password');
       next();
     } catch (error) {
-      console.error(error);
+      console.error('Token Verification Error:', error);
       res.status(401);
       throw new Error('Not authorized, token failed');
     }

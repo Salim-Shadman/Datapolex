@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Plus, LayoutGrid, List as ListIcon, Filter } from 'lucide-react';
 import toast from 'react-hot-toast';
 import KanbanBoard from './KanbanBoard';
@@ -17,7 +17,7 @@ export default function TaskBoard({ projectId }: { projectId: string }) {
   const [sprints, setSprints] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   
-  // FIX: View & Filter State
+  // View & Filter State
   const [viewMode, setViewMode] = useState<'board' | 'list'>('board');
   const [filterSprint, setFilterSprint] = useState('');
   const [filterAssignee, setFilterAssignee] = useState('');
@@ -28,45 +28,77 @@ export default function TaskBoard({ projectId }: { projectId: string }) {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<any>(null);
 
-  // FIX: Fetch Filters
+  // FIX: AbortController Ref for Race Conditions
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Fetch Filters (Sprints & Users)
   useEffect(() => {
+    let isMounted = true;
     const fetchFilters = async () => {
         try {
             const [sprintRes, userRes] = await Promise.all([
                 api.get(`/sprints?projectId=${projectId}`),
-                api.get('/users')
+                // Optimization: Fetch simplified user list
+                api.get('/users?simple=true') 
             ]);
-            setSprints(sprintRes.data);
-            setUsers(userRes.data);
+            if (isMounted) {
+                setSprints(sprintRes.data);
+                setUsers(userRes.data);
+            }
         } catch (e) { console.error(e); }
     };
     fetchFilters();
+    return () => { isMounted = false; };
   }, [projectId]);
 
   const fetchTasks = useCallback(async () => {
+    // 1. Cancel previous pending request
+    if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+    }
+    
+    // 2. Create new controller
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     setLoading(true);
     try {
-      // FIX: Apply Filters
       const filters: any = { projectId };
       if (filterSprint) filters.sprintId = filterSprint;
       if (filterAssignee) filters.assignee = filterAssignee;
       if (filterPriority) filters.priority = filterPriority;
 
+      // Note: Typically pass controller.signal to api calls, 
+      // but here we check aborted status before setting state
       const data = await taskService.getAll(filters);
-      setTasks(data);
-    } catch (error) {
-      console.error(error);
-      toast.error('Failed to load tasks');
+      
+      if (!controller.signal.aborted) {
+         setTasks(data);
+      }
+    } catch (error: any) {
+      if (error.name !== 'CanceledError' && !controller.signal.aborted) {
+          console.error(error);
+          toast.error('Failed to load tasks');
+      }
     } finally {
-      setLoading(false);
+      if (!controller.signal.aborted) {
+          setLoading(false);
+      }
     }
   }, [projectId, filterSprint, filterAssignee, filterPriority]);
 
   useEffect(() => {
     fetchTasks();
+    return () => {
+        // Cleanup on unmount
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+        }
+    };
   }, [fetchTasks]);
 
   const handleStatusChange = async (taskId: string, newStatus: string) => {
+    // Optimistic UI Update
     const previousTasks = [...tasks];
     const updatedTasks = tasks.map(t => 
         t._id === taskId ? { ...t, status: newStatus } : t
@@ -77,7 +109,7 @@ export default function TaskBoard({ projectId }: { projectId: string }) {
         await taskService.update(taskId, { status: newStatus });
     } catch (error) {
         toast.error('Failed to update status');
-        setTasks(previousTasks); 
+        setTasks(previousTasks); // Revert on error
     }
   };
 
@@ -175,7 +207,6 @@ export default function TaskBoard({ projectId }: { projectId: string }) {
                 onTaskClick={handleTaskClick} 
              />
          ) : (
-             /* FIX: List View Added */
              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm h-full overflow-y-auto">
                  <table className="w-full text-sm text-left">
                      <thead className="bg-gray-50 text-gray-500 font-medium border-b border-gray-200">

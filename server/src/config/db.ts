@@ -1,34 +1,44 @@
 import mongoose from 'mongoose';
 
+// টাইপ ডেফিনিশন: গ্লোবাল অবজেক্টে mongoose ক্যাশ রাখার জন্য
+let cached = (global as any).mongoose;
+
+if (!cached) {
+  cached = (global as any).mongoose = { conn: null, promise: null };
+}
+
 const connectDB = async () => {
-  try {
-    mongoose.set('strictQuery', true);
-    
-    // Check if MONGO_URI exists before connecting
-    if (!process.env.MONGO_URI) {
-        throw new Error('MONGO_URI is not defined in environment variables.');
-    }
-
-    const conn = await mongoose.connect(process.env.MONGO_URI, {
-      // as mongoose.ConnectOptions is correct for type safety
-    } as mongoose.ConnectOptions); 
-
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
-
-    // Handle Connection Events
-    mongoose.connection.on('disconnected', () => {
-        console.warn('⚠️ MongoDB disconnected! Attempting to reconnect...');
-    });
-
-    mongoose.connection.on('error', (err) => {
-        console.error(`⚠️ MongoDB connection error: ${err}`);
-    });
-
-  } catch (error: any) {
-    console.error(`Error connecting to MongoDB: ${error.message}`);
-    // FIX: Vercel-এ process.exit(1) রিমুভ করা হলো। Vercel নিজে থেকেই ক্র্যাশ হ্যান্ডেল করবে।
-    // process.exit(1); 
+  // ১. মঙ্গো ইউআরআই চেক
+  if (!process.env.MONGO_URI) {
+    throw new Error('❌ FATAL ERROR: MONGO_URI is not defined in environment variables.');
   }
+
+  // ২. যদি অলরেডি কানেকশন থাকে, তবে সেটিই রিটার্ন করবে (Performance Boost)
+  if (cached.conn) {
+    return cached.conn;
+  }
+
+  // ৩. নতুন কানেকশন তৈরি (যদি আগের প্রমিস না থাকে)
+  if (!cached.promise) {
+    const opts: mongoose.ConnectOptions = {
+      bufferCommands: false, // Serverless-এ বাফারিং বন্ধ রাখা ভালো
+    };
+
+    cached.promise = mongoose.connect(process.env.MONGO_URI, opts).then((mongoose) => {
+      console.log(`✅ New MongoDB Connected: ${mongoose.connection.host}`);
+      return mongoose;
+    });
+  }
+
+  try {
+    cached.conn = await cached.promise;
+  } catch (e) {
+    cached.promise = null;
+    console.error('❌ MongoDB Connection Error:', e);
+    throw e;
+  }
+
+  return cached.conn;
 };
 
 export default connectDB;
